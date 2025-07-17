@@ -425,35 +425,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _completeKYC() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Complete KYC Verification'),
-        content: const Text(
-          'To complete your KYC verification, please upload:\n\n'
-          '• Front and back of your IC\n'
-          '• A clear selfie photo\n'
-          '• Proof of address (utility bill)\n\n'
-          'This process usually takes 1-2 business days.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Later'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('KYC upload feature - Coming soon'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
-            },
-            child: const Text('Upload Documents'),
-          ),
-        ],
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('KYC verification - Feature coming soon'),
+        backgroundColor: Colors.blue,
       ),
     );
   }
