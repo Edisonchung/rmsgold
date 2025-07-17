@@ -626,8 +626,8 @@ class _SellScreenState extends State<SellScreen> {
                          inputValue > 0;
         
         // Check if user has enough gold
-        if (canProceed && !_isAmountMode && inputValue! > portfolio.goldHoldings) {
-          canProceed = false;
+        if (canProceed && !_isAmountMode && inputValue > portfolio.goldHoldings) {
+        canProceed = false;
         }
         
         if (canProceed && _isAmountMode) {
