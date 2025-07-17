@@ -53,6 +53,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           });
         },
         controlsBuilder: (context, details) {
+          final isLast = _currentStep == 3; // Manually check if it's the last step
           return Row(
             children: [
               if (details.stepIndex > 0)
@@ -63,7 +64,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               const SizedBox(width: 8),
               ElevatedButton(
                 onPressed: details.onStepContinue,
-                child: Text(details.isLast ? 'Register' : 'Next'),
+                child: Text(isLast ? 'Register' : 'Next'),
               ),
             ],
           );
