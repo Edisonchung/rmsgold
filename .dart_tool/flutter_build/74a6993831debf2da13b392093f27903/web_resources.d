@@ -1,0 +1,1 @@
+ build/web/index.html build/web/manifest.json:  /workspaces/rmsgold/web/index.html /workspaces/rmsgold/web/manifest.json
