@@ -35,464 +35,7 @@ class _ConversionScreenState extends State<ConversionScreen> {
   }
 
   @override
-  Widget _buildConversionSummary(Portfolio portfolio) {
-    final quantity = int.tryParse(_quantityController.text) ?? 0;
-    if (quantity <= 0) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Conversion Summary',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Enter quantity to see conversion summary',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final denomWeight = double.parse(_selectedDenomination.replaceAll('g', ''));
-    final totalGoldNeeded = quantity * denomWeight;
-    final conversionFee = _conversionFees[_selectedDenomination]! * quantity;
-    final deliveryFee = _deliveryMethod == 'delivery' ? 15.0 : 0.0;
-    final totalFees = conversionFee + deliveryFee;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Conversion Summary',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            _buildSummaryRow('Physical Gold:', '$quantity x $_selectedDenomination wafers'),
-            _buildSummaryRow('Total Gold Weight:', '${totalGoldNeeded.toStringAsFixed(1)}g'),
-            _buildSummaryRow('Conversion Fee:', 'RM ${NumberFormat('#,##0.00').format(conversionFee)}'),
-            if (_deliveryMethod == 'delivery')
-              _buildSummaryRow('Delivery Fee:', 'RM ${NumberFormat('#,##0.00').format(deliveryFee)}'),
-            const Divider(),
-            _buildSummaryRow(
-              'Total Fees:',
-              'RM ${NumberFormat('#,##0.00').format(totalFees)}',
-              isTotal: true,
-            ),
-            const SizedBox(height: 8),
-            _buildSummaryRow('Delivery Method:', _deliveryMethod == 'pickup' ? 'Pickup at HQ' : 'Home Delivery'),
-            
-            if (totalGoldNeeded > portfolio.goldHoldings) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.red.shade700),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Insufficient digital gold. You need ${totalGoldNeeded.toStringAsFixed(1)}g but only have ${portfolio.goldHoldings.toStringAsFixed(4)}g.',
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.black : Colors.grey.shade700,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-              color: isTotal ? Colors.amber.shade700 : Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConvertButton(Portfolio portfolio) {
-    final quantity = int.tryParse(_quantityController.text) ?? 0;
-    final denomWeight = double.parse(_selectedDenomination.replaceAll('g', ''));
-    final totalGoldNeeded = quantity * denomWeight;
-    
-    bool canConvert = quantity > 0 && 
-                     totalGoldNeeded <= portfolio.goldHoldings &&
-                     (_deliveryMethod != 'delivery' || _addressController.text.isNotEmpty);
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canConvert ? _handleConversion : null,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: Colors.amber.shade700,
-        ),
-        child: const Text(
-          'Convert to Physical Gold',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImportantInfo() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.orange.shade700),
-                const SizedBox(width: 8),
-                const Text(
-                  'Important Information',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildInfoItem('Physical gold conversion is irreversible'),
-            _buildInfoItem('Conversion fees apply based on denomination'),
-            _buildInfoItem('Pickup available at RMS Gold HQ during business hours'),
-            _buildInfoItem('Home delivery takes 3-5 business days'),
-            _buildInfoItem('All physical gold comes with authenticity certificate'),
-            _buildInfoItem('Insurance coverage included during delivery'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'RMS Gold HQ Address:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Level 10, Menara RMS\nJalan Ampang, 50450 Kuala Lumpur\n\nBusiness Hours:\nMonday - Friday: 9:00 AM - 6:00 PM\nSaturday: 9:00 AM - 1:00 PM',
-                    style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade600,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleConversion() {
-    final quantity = int.tryParse(_quantityController.text) ?? 0;
-    final denomWeight = double.parse(_selectedDenomination.replaceAll('g', ''));
-    final totalGoldNeeded = quantity * denomWeight;
-    final conversionFee = _conversionFees[_selectedDenomination]! * quantity;
-    final deliveryFee = _deliveryMethod == 'delivery' ? 15.0 : 0.0;
-    final totalFees = conversionFee + deliveryFee;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Conversion'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Please confirm your physical gold conversion:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              _buildConfirmationRow('Physical Gold:', '$quantity x $_selectedDenomination wafers'),
-              _buildConfirmationRow('Total Weight:', '${totalGoldNeeded.toStringAsFixed(1)}g'),
-              _buildConfirmationRow('Conversion Fee:', 'RM ${NumberFormat('#,##0.00').format(conversionFee)}'),
-              if (_deliveryMethod == 'delivery')
-                _buildConfirmationRow('Delivery Fee:', 'RM ${NumberFormat('#,##0.00').format(deliveryFee)}'),
-              const Divider(),
-              _buildConfirmationRow('Total Fees:', 'RM ${NumberFormat('#,##0.00').format(totalFees)}', isTotal: true),
-              const SizedBox(height: 16),
-              _buildConfirmationRow('Delivery:', _deliveryMethod == 'pickup' ? 'Pickup at HQ' : 'Home Delivery'),
-              if (_deliveryMethod == 'delivery')
-                _buildConfirmationRow('Address:', _addressController.text),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'This conversion is irreversible. Your digital gold will be permanently converted to physical gold.',
-                        style: TextStyle(
-                          color: Colors.orange.shade700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _processConversion(quantity, totalGoldNeeded, totalFees);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber.shade700,
-            ),
-            child: const Text('Confirm Conversion', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfirmationRow(String label, String value, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label',
-              style: TextStyle(
-                fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-                color: isTotal ? Colors.amber.shade700 : null,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _processConversion(int quantity, double goldWeight, double totalFees) {
-    // Simulate conversion processing
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Processing conversion...'),
-            Text('Please do not close this screen.'),
-          ],
-        ),
-      ),
-    );
-
-    // Simulate processing delay
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pop(context); // Close processing dialog
-      
-      // Show success dialog
-      _showSuccessDialog(quantity, goldWeight, totalFees);
-    });
-  }
-
-  void _showSuccessDialog(int quantity, double goldWeight, double totalFees) {
-    final conversionId = 'CONV-${DateTime.now().millisecondsSinceEpoch}';
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        icon: Icon(
-          Icons.check_circle,
-          color: Colors.green.shade600,
-          size: 64,
-        ),
-        title: const Text('Conversion Successful!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Your digital gold has been successfully converted to $quantity x $_selectedDenomination physical gold wafers.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Conversion ID: $conversionId',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Total Fees: RM ${NumberFormat('#,##0.00').format(totalFees)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _deliveryMethod == 'pickup'
-                ? 'Please visit our HQ to collect your physical gold. Bring a valid ID and this conversion ID.'
-                : 'Your physical gold will be delivered to your address within 3-5 business days. You will receive tracking information via SMS.',
-              style: const TextStyle(fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close success dialog
-              Navigator.pop(context); // Go back to dashboard
-            },
-            child: const Text('View Portfolio'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/transactions');
-            },
-            child: const Text('View History'),
-          ),
-        ],
-      ),
-    );
-  }
-} build(BuildContext context) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Convert to Physical Gold'),
@@ -799,4 +342,229 @@ class _ConversionScreenState extends State<ConversionScreen> {
     );
   }
 
-  Widget
+  Widget _buildConversionSummary(Portfolio portfolio) {
+    final quantity = int.tryParse(_quantityController.text) ?? 0;
+    if (quantity <= 0) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Conversion Summary',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Enter quantity to see conversion summary',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final denomWeight = double.parse(_selectedDenomination.replaceAll('g', ''));
+    final totalGoldNeeded = quantity * denomWeight;
+    final conversionFee = _conversionFees[_selectedDenomination]! * quantity;
+    final deliveryFee = _deliveryMethod == 'delivery' ? 15.0 : 0.0;
+    final totalFees = conversionFee + deliveryFee;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Conversion Summary',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            _buildSummaryRow('Physical Gold:', '$quantity x $_selectedDenomination wafers'),
+            _buildSummaryRow('Total Gold Weight:', '${totalGoldNeeded.toStringAsFixed(1)}g'),
+            _buildSummaryRow('Conversion Fee:', 'RM ${NumberFormat('#,##0.00').format(conversionFee)}'),
+            if (_deliveryMethod == 'delivery')
+              _buildSummaryRow('Delivery Fee:', 'RM ${NumberFormat('#,##0.00').format(deliveryFee)}'),
+            const Divider(),
+            _buildSummaryRow(
+              'Total Fees:',
+              'RM ${NumberFormat('#,##0.00').format(totalFees)}',
+              isTotal: true,
+            ),
+            const SizedBox(height: 8),
+            _buildSummaryRow('Delivery Method:', _deliveryMethod == 'pickup' ? 'Pickup at HQ' : 'Home Delivery'),
+            
+            if (totalGoldNeeded > portfolio.goldHoldings) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Insufficient digital gold. You need ${totalGoldNeeded.toStringAsFixed(1)}g but only have ${portfolio.goldHoldings.toStringAsFixed(4)}g.',
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              color: isTotal ? Colors.black : Colors.grey.shade700,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+              color: isTotal ? Colors.amber.shade700 : Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConvertButton(Portfolio portfolio) {
+    final quantity = int.tryParse(_quantityController.text) ?? 0;
+    final denomWeight = double.parse(_selectedDenomination.replaceAll('g', ''));
+    final totalGoldNeeded = quantity * denomWeight;
+    
+    bool canConvert = quantity > 0 && 
+                     totalGoldNeeded <= portfolio.goldHoldings &&
+                     (_deliveryMethod != 'delivery' || _addressController.text.isNotEmpty);
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: canConvert ? _handleConversion : null,
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: Colors.amber.shade700,
+        ),
+        child: const Text(
+          'Convert to Physical Gold',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImportantInfo() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  'Important Information',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildInfoItem('Physical gold conversion is irreversible'),
+            _buildInfoItem('Conversion fees apply based on denomination'),
+            _buildInfoItem('Pickup available at RMS Gold HQ during business hours'),
+            _buildInfoItem('Home delivery takes 3-5 business days'),
+            _buildInfoItem('All physical gold comes with authenticity certificate'),
+            _buildInfoItem('Insurance coverage included during delivery'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade600,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleConversion() {
+    // Handle conversion logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Conversion feature - Coming soon'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+}
