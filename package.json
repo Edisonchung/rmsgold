@@ -1,0 +1,12 @@
+{
+  "name": "rmsgold",
+  "version": "1.0.0",
+  "description": "RMS Gold Account-i - Digital Gold Trading Platform",
+  "scripts": {
+    "build": "flutter build web --release --web-renderer html",
+    "install": "flutter pub get"
+  },
+  "engines": {
+    "node": "18"
+  }
+}
