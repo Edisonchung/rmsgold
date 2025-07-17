@@ -1,12 +1,27 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'utils/theme.dart';
+import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
+import 'providers/gold_provider.dart';
+import 'providers/transaction_provider.dart';
+import 'providers/notification_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/registration_screen.dart';
+import 'screens/purchase_screen.dart';
+import 'screens/sell_screen.dart';
+import 'screens/conversion_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/transaction_history_screen.dart';
+import 'utils/theme.dart';
 import 'admin/admin_main.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -15,15 +30,29 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'RMS Gold Account-i',
-      theme: AppTheme.goldTheme,
-      home: const AppRouter(),
-      routes: {
-        '/': (context) => const AppRouter(),
-        '/dashboard': (context) => const DashboardScreen(),
-        '/admin': (context) => const AdminApp(),
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => GoldProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+      ],
+      child: MaterialApp(
+        title: 'RMS Gold Account-i',
+        theme: AppTheme.goldTheme,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const AppRouter(),
+          '/admin': (context) => const AdminApp(),
+          '/register': (context) => const RegistrationScreen(),
+          '/dashboard': (context) => const DashboardScreen(),
+          '/purchase': (context) => const PurchaseScreen(),
+          '/sell': (context) => const SellScreen(),
+          '/conversion': (context) => const ConversionScreen(),
+          '/profile': (context) => const ProfileScreen(),
+          '/transactions': (context) => const TransactionHistoryScreen(),
+        },
+      ),
     );
   }
 }
@@ -33,18 +62,18 @@ class AppRouter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check URL for admin route
-    final uri = Uri.base;
-    final path = uri.path;
-    final fragment = uri.fragment;
-    
-    // Check if accessing admin
-    if (path.contains('admin') || fragment.contains('admin') || 
-        uri.toString().contains('admin')) {
+    final currentUrl = Uri.base.toString();
+    if (currentUrl.contains('/admin')) {
       return const AdminApp();
     }
-    
-    // Default to user login
-    return const LoginScreen();
+
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isAuthenticated) {
+          return const DashboardScreen();
+        }
+        return const LoginScreen();
+      },
+    );
   }
 }
