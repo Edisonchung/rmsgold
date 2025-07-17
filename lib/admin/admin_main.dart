@@ -676,9 +676,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildTransactionsContent() {
-    return const Center(
-      child: Text('Transaction Monitoring Content - Coming Next'),
-    );
+    return const TransactionMonitoringScreen();
   }
 
   Widget _buildKYCContent() {
