@@ -1,0 +1,16 @@
+{
+  "framework": "flutter",
+  "buildCommand": "flutter build web --web-renderer html --tree-shake-icons",
+  "outputDirectory": "build/web",
+  "installCommand": "flutter pub get",
+  "rewrites": [
+    {
+      "source": "/admin/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)", 
+      "destination": "/index.html"
+    }
+  ]
+}
