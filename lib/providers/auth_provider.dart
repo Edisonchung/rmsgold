@@ -1,88 +1,116 @@
-// lib/admin/providers/admin_auth_provider.dart
+// lib/providers/auth_provider.dart
 import 'package:flutter/foundation.dart';
+import '../models/user_model.dart';
 
-enum AdminRole { superAdmin, kycOfficer, support }
-
-class AdminUser {
-  final String id;
-  final String email;
-  final String name;
-  final AdminRole role;
-  final List<String> permissions;
-  final bool mfaEnabled;
-  final DateTime lastLogin;
-
-  AdminUser({
-    required this.id,
-    required this.email,
-    required this.name,
-    required this.role,
-    required this.permissions,
-    required this.mfaEnabled,
-    required this.lastLogin,
-  });
-
-  factory AdminUser.fromJson(Map<String, dynamic> json) {
-    return AdminUser(
-      id: json['id'],
-      email: json['email'],
-      name: json['name'],
-      role: AdminRole.values.firstWhere(
-        (e) => e.toString().split('.').last == json['role'],
-      ),
-      permissions: List<String>.from(json['permissions'] ?? []),
-      mfaEnabled: json['mfaEnabled'] ?? false,
-      lastLogin: DateTime.parse(json['lastLogin']),
-    );
-  }
-}
-
-class AdminAuthProvider extends ChangeNotifier {
-  AdminUser? _currentAdmin;
+class AuthProvider extends ChangeNotifier {
+  User? _currentUser;
   bool _isLoading = false;
+  String? _errorMessage;
 
-  AdminUser? get currentAdmin => _currentAdmin;
-  bool get isAuthenticated => _currentAdmin != null;
+  User? get currentUser => _currentUser;
+  bool get isAuthenticated => _currentUser != null;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  AuthProvider() {
+    _initializeDemoUser();
+  }
+
+  void _initializeDemoUser() {
+    // Initialize with demo user for presentation
+    _currentUser = User(
+      id: 'demo-user-001',
+      email: 'demo@rmsgold.com',
+      name: 'Demo User',
+      phone: '+60123456789',
+      icNumber: '123456-12-1234',
+      address: 'Demo Address, Kuala Lumpur',
+      bankAccount: 'Maybank - ****1234',
+      kycApproved: true,
+      mfaEnabled: false,
+      joinDate: DateTime.now().subtract(const Duration(days: 30)),
+      kycStatus: KYCStatus.approved,
+    );
+    notifyListeners();
+  }
 
   Future<bool> signIn(String email, String password) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      // Demo admin credentials
-      if (email == 'admin@rmsgold.com' && password == 'admin123456') {
-        _currentAdmin = AdminUser(
-          id: 'admin-001',
+      // Simulate sign in delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Demo credentials
+      if (email == 'demo@rmsgold.com' && password == 'demo123456') {
+        _currentUser = User(
+          id: 'demo-user-001',
           email: email,
-          name: 'System Administrator',
-          role: AdminRole.superAdmin,
-          permissions: ['user_management', 'transaction_oversight', 'system_config'],
+          name: 'Demo User',
+          phone: '+60123456789',
+          icNumber: '123456-12-1234',
+          address: 'Demo Address, Kuala Lumpur',
+          bankAccount: 'Maybank - ****1234',
+          kycApproved: true,
           mfaEnabled: false,
-          lastLogin: DateTime.now(),
+          joinDate: DateTime.now().subtract(const Duration(days: 30)),
+          kycStatus: KYCStatus.approved,
         );
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else if (email == 'kyc@rmsgold.com' && password == 'kyc123456') {
-        _currentAdmin = AdminUser(
-          id: 'kyc-001',
-          email: email,
-          name: 'KYC Officer',
-          role: AdminRole.kycOfficer,
-          permissions: ['kyc_approval', 'user_management'],
-          mfaEnabled: true,
-          lastLogin: DateTime.now(),
-        );
+        
         _isLoading = false;
         notifyListeners();
         return true;
       }
 
+      _errorMessage = 'Invalid credentials';
       _isLoading = false;
       notifyListeners();
       return false;
     } catch (e) {
+      _errorMessage = 'Sign in failed: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String icNumber,
+    required String address,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Simulate registration delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Create new user (demo)
+      _currentUser = User(
+        id: 'user-${DateTime.now().millisecondsSinceEpoch}',
+        email: email,
+        name: name,
+        phone: phone,
+        icNumber: icNumber,
+        address: address,
+        kycApproved: false,
+        mfaEnabled: false,
+        joinDate: DateTime.now(),
+        kycStatus: KYCStatus.pending,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Registration failed: $e';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -90,11 +118,107 @@ class AdminAuthProvider extends ChangeNotifier {
   }
 
   void signOut() {
-    _currentAdmin = null;
+    _currentUser = null;
+    _errorMessage = null;
     notifyListeners();
   }
 
-  bool hasPermission(String permission) {
-    return _currentAdmin?.permissions.contains(permission) ?? false;
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  Future<bool> resetPassword(String email) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Simulate password reset
+      await Future.delayed(const Duration(seconds: 1));
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Password reset failed: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateProfile({
+    String? name,
+    String? phone,
+    String? address,
+  }) async {
+    if (_currentUser == null) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Simulate update delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      _currentUser = User(
+        id: _currentUser!.id,
+        email: _currentUser!.email,
+        name: name ?? _currentUser!.name,
+        phone: phone ?? _currentUser!.phone,
+        icNumber: _currentUser!.icNumber,
+        address: address ?? _currentUser!.address,
+        bankAccount: _currentUser!.bankAccount,
+        kycApproved: _currentUser!.kycApproved,
+        mfaEnabled: _currentUser!.mfaEnabled,
+        joinDate: _currentUser!.joinDate,
+        profileImageUrl: _currentUser!.profileImageUrl,
+        kycStatus: _currentUser!.kycStatus,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Profile update failed: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> enableMFA() async {
+    if (_currentUser == null) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await Future.delayed(const Duration(seconds: 1));
+
+      _currentUser = User(
+        id: _currentUser!.id,
+        email: _currentUser!.email,
+        name: _currentUser!.name,
+        phone: _currentUser!.phone,
+        icNumber: _currentUser!.icNumber,
+        address: _currentUser!.address,
+        bankAccount: _currentUser!.bankAccount,
+        kycApproved: _currentUser!.kycApproved,
+        mfaEnabled: true,
+        joinDate: _currentUser!.joinDate,
+        profileImageUrl: _currentUser!.profileImageUrl,
+        kycStatus: _currentUser!.kycStatus,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'MFA enable failed: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }
