@@ -111,6 +111,11 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addTransaction(Transaction transaction) {
+    _transactions.insert(0, transaction);
+    notifyListeners();
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();
