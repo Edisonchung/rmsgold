@@ -1,661 +1,644 @@
-import 'package:flutter/material.dart';
+// Update lib/main.dart to include admin portal routing
 
-void main() {
-  runApp(MyApp());
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
+import 'providers/gold_provider.dart';
+import 'providers/transaction_provider.dart';
+import 'screens/login_screen.dart';
+import 'screens/dashboard_screen.dart';
+import 'utils/theme.dart';
+import 'admin/admin_main.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'RMS Gold Account-i',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFFFFD700)),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => GoldProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+      ],
+      child: MaterialApp(
+        title: 'RMS Gold Account-i',
+        theme: AppTheme.goldTheme,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const AppRouter(),
+          '/admin': (context) => const AdminApp(),
+        },
       ),
-      home: RMSGoldDemo(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class RMSGoldDemo extends StatefulWidget {
-  @override
-  _RMSGoldDemoState createState() => _RMSGoldDemoState();
-}
-
-class _RMSGoldDemoState extends State<RMSGoldDemo> with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  double goldPrice = 475.50;
-  double portfolioValue = 1146.25;
-  bool isLoggedIn = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: Duration(seconds: 2),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-    
-    // Simulate gold price updates
-    _startPriceUpdates();
-  }
-
-  void _startPriceUpdates() {
-    Future.delayed(Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          goldPrice += (DateTime.now().millisecond % 10 - 5) * 0.1;
-          portfolioValue = goldPrice * 2.41; // Simulate 2.41 grams
-        });
-        _startPriceUpdates();
-      }
-    });
-  }
+class AppRouter extends StatelessWidget {
+  const AppRouter({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: isLoggedIn ? _buildDashboard() : _buildLoginScreen(),
-      ),
+    // Check if the current route is for admin
+    final currentUrl = Uri.base.toString();
+    if (currentUrl.contains('/admin')) {
+      return const AdminApp();
+    }
+
+    // Regular user app routing
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isAuthenticated) {
+          return const DashboardScreen();
+        }
+        return const LoginScreen();
+      },
     );
   }
+}
 
-  Widget _buildLoginScreen() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A237E), Color(0xFF3F51B5)],
+// Update lib/screens/login_screen.dart to include admin access
+// Add this to the existing LoginScreen build method, after the demo credentials card:
+
+Widget _buildAdminAccessCard() {
+  return Container(
+    margin: const EdgeInsets.only(top: 16),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.red.shade50,
+      border: Border.all(color: Colors.red.shade200),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.admin_panel_settings, 
+                 color: Colors.red.shade700, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Administrator Access',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade800,
+              ),
+            ),
+          ],
         ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        const SizedBox(height: 8),
+        Text(
+          'Bank administrators can access the admin portal at:',
+          style: TextStyle(color: Colors.red.shade700),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () {
+            // Navigate to admin portal
+            Navigator.pushNamed(context, '/admin');
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.red.shade100,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '${Uri.base.origin}/admin',
+              style: TextStyle(
+                color: Colors.red.shade800,
+                fontFamily: 'monospace',
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// User Management Screen for Admin Portal
+// lib/admin/screens/user_management_screen.dart
+
+import 'package:flutter/material.dart';
+
+class UserManagementScreen extends StatefulWidget {
+  const UserManagementScreen({super.key});
+
+  @override
+  State<UserManagementScreen> createState() => _UserManagementScreenState();
+}
+
+class _UserManagementScreenState extends State<UserManagementScreen> {
+  String _searchQuery = '';
+  String _selectedFilter = 'All';
+  
+  final List<String> _filterOptions = [
+    'All', 'Active', 'Pending KYC', 'Suspended', 'Rejected'
+  ];
+
+  // Demo user data
+  final List<Map<String, dynamic>> _users = [
+    {
+      'id': '001',
+      'name': 'John Doe',
+      'email': 'john.doe@email.com',
+      'phone': '+60123456789',
+      'kycStatus': 'Approved',
+      'accountStatus': 'Active',
+      'goldHoldings': '5.25g',
+      'totalValue': 'RM 2,498.13',
+      'joinDate': '2025-01-15',
+      'lastLogin': '2 hours ago',
+    },
+    {
+      'id': '002',
+      'name': 'Jane Smith',
+      'email': 'jane.smith@email.com',
+      'phone': '+60198765432',
+      'kycStatus': 'Pending',
+      'accountStatus': 'Pending',
+      'goldHoldings': '0g',
+      'totalValue': 'RM 0.00',
+      'joinDate': '2025-07-18',
+      'lastLogin': 'Never',
+    },
+    {
+      'id': '003',
+      'name': 'Ahmad Rahman',
+      'email': 'ahmad.rahman@email.com',
+      'phone': '+60177788999',
+      'kycStatus': 'Approved',
+      'accountStatus': 'Active',
+      'goldHoldings': '12.50g',
+      'totalValue': 'RM 5,943.75',
+      'joinDate': '2024-12-20',
+      'lastLogin': '1 day ago',
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredUsers = _getFilteredUsers();
+    
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with actions
+          Row(
             children: [
-              // Logo
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Color(0xFFFFD700),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.account_balance,
-                  size: 60,
-                  color: Color(0xFF1A237E),
-                ),
-              ),
-              SizedBox(height: 40),
-              
-              // Title
-              Text(
-                'RMS Gold Account-i',
+              const Text(
+                'User Management',
                 style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 16),
-              
-              // Subtitle
-              Text(
-                'Digital Gold Trading Platform',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white70,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 60),
-              
-              // Demo Button
-              Container(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      isLoggedIn = true;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFFFD700),
-                    foregroundColor: Color(0xFF1A237E),
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                  ),
-                  child: Text(
-                    'Enter Demo',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              
-              // Demo credentials
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Demo Credentials',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Email: demo@rmsgold.com',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    Text(
-                      'Password: demo123456',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 40),
-              
-              // Features
-              Text(
-                'Key Features',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildFeatureChip('Live Gold Prices'),
-                  _buildFeatureChip('Portfolio Tracking'),
-                  _buildFeatureChip('Buy/Sell Gold'),
-                  _buildFeatureChip('Transaction History'),
-                  _buildFeatureChip('Mobile Responsive'),
-                ],
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _showExportDialog();
+                },
+                icon: const Icon(Icons.download),
+                label: const Text('Export Users'),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _showBulkActionsDialog();
+                },
+                icon: const Icon(Icons.batch_prediction),
+                label: const Text('Bulk Actions'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade700,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureChip(String label) {
-    return Chip(
-      label: Text(
-        label,
-        style: TextStyle(color: Colors.white, fontSize: 12),
-      ),
-      backgroundColor: Colors.white24,
-      side: BorderSide(color: Colors.white38),
-    );
-  }
-
-  Widget _buildDashboard() {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('RMS Gold Account-i'),
-        backgroundColor: Color(0xFF1A237E),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              setState(() {
-                isLoggedIn = false;
-              });
-            },
+          const SizedBox(height: 24),
+          
+          // Search and filters
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Search users by name, email, or phone...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              DropdownButton<String>(
+                value: _selectedFilter,
+                items: _filterOptions.map((filter) {
+                  return DropdownMenuItem(
+                    value: filter,
+                    child: Text(filter),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedFilter = value!;
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Users table
+          Expanded(
+            child: Card(
+              child: Column(
+                children: [
+                  // Table header
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${filteredUsers.length} users found',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () {
+                            // Refresh data
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Refresh'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Table content
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: filteredUsers.length,
+                      itemBuilder: (context, index) {
+                        final user = filteredUsers[index];
+                        return _buildUserRow(user);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Color(0xFFFFD700),
-                      child: Icon(
-                        Icons.person,
-                        size: 30,
-                        color: Color(0xFF1A237E),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome back,',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                          Text(
-                            'Ahmad Rahman',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Gold Investor',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      children: [
-                        Icon(Icons.verified, color: Colors.green),
-                        Text('KYC Verified', style: TextStyle(fontSize: 10)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            
-            // Gold Price Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.trending_up, color: Color(0xFFFFD700)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Live Gold Price',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'RM ${goldPrice.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A237E),
-                              ),
-                            ),
-                            Text(
-                              'per gram',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.green[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '+2.45%',
-                            style: TextStyle(
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            
-            // Portfolio Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.account_balance_wallet, color: Color(0xFFFFD700)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Your Portfolio',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '2.4100 g',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Gold Holdings',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'RM ${portfolioValue.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A237E),
-                              ),
-                            ),
-                            Text(
-                              'Current Value',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green[50],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.trending_up, color: Colors.green),
-                          SizedBox(width: 8),
-                          Text(
-                            'Profit: RM +26.25 (2.35%)',
-                            style: TextStyle(
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            
-            // Action Buttons
-            Row(
+    );
+  }
+
+  Widget _buildUserRow(Map<String, dynamic> user) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade200),
+        ),
+      ),
+      child: Row(
+        children: [
+          // User info
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showBuyDialog();
-                    },
-                    icon: Icon(Icons.add_shopping_cart),
-                    label: Text('Buy Gold'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF1A237E),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
+                Text(
+                  user['name'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
                   ),
                 ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      _showSellDialog();
-                    },
-                    icon: Icon(Icons.sell),
-                    label: Text('Sell Gold'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Color(0xFF1A237E),
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  user['email'],
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  user['phone'],
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 20),
-            
-            // Recent Transactions
-            Text(
-              'Recent Transactions',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          
+          // KYC Status
+          Expanded(
+            child: _buildStatusChip(
+              user['kycStatus'],
+              user['kycStatus'] == 'Approved' ? Colors.green : 
+              user['kycStatus'] == 'Pending' ? Colors.orange : Colors.red,
             ),
-            SizedBox(height: 12),
-            Card(
-              child: Column(
-                children: [
-                  _buildTransactionItem(
-                    'Buy Gold',
-                    '1.0000 g',
-                    'RM 475.50',
-                    Icons.add_shopping_cart,
-                    Colors.green,
-                    '2 hours ago',
-                  ),
-                  Divider(height: 1),
-                  _buildTransactionItem(
-                    'Buy Gold',
-                    '0.5000 g',
-                    'RM 237.75',
-                    Icons.add_shopping_cart,
-                    Colors.green,
-                    '1 day ago',
-                  ),
-                  Divider(height: 1),
-                  _buildTransactionItem(
-                    'Buy Gold',
-                    '0.9100 g',
-                    'RM 432.65',
-                    Icons.add_shopping_cart,
-                    Colors.green,
-                    '3 days ago',
-                  ),
-                ],
-              ),
+          ),
+          
+          // Account Status
+          Expanded(
+            child: _buildStatusChip(
+              user['accountStatus'],
+              user['accountStatus'] == 'Active' ? Colors.blue : Colors.grey,
             ),
-          ],
-        ),
+          ),
+          
+          // Gold Holdings
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user['goldHoldings'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  user['totalValue'],
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Join Date
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user['joinDate']),
+                Text(
+                  'Last: ${user['lastLogin']}',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Actions
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'view',
+                child: Row(
+                  children: [
+                    Icon(Icons.visibility),
+                    SizedBox(width: 8),
+                    Text('View Details'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'kyc',
+                child: Row(
+                  children: [
+                    Icon(Icons.verified_user),
+                    SizedBox(width: 8),
+                    Text('Review KYC'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'suspend',
+                child: Row(
+                  children: [
+                    Icon(Icons.block),
+                    SizedBox(width: 8),
+                    Text('Suspend Account'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'message',
+                child: Row(
+                  children: [
+                    Icon(Icons.message),
+                    SizedBox(width: 8),
+                    Text('Send Message'),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              _handleUserAction(value.toString(), user);
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(
-    String type,
-    String amount,
-    String value,
-    IconData icon,
-    Color color,
-    String time,
-  ) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: color.withOpacity(0.1),
-        child: Icon(icon, color: color),
+  Widget _buildStatusChip(String status, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
-      title: Text(type),
-      subtitle: Text(time),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Text(
+        status,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getFilteredUsers() {
+    List<Map<String, dynamic>> filtered = _users;
+    
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((user) {
+        return user['name'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+               user['email'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+               user['phone'].contains(_searchQuery);
+      }).toList();
+    }
+    
+    // Apply status filter
+    if (_selectedFilter != 'All') {
+      filtered = filtered.where((user) {
+        switch (_selectedFilter) {
+          case 'Active':
+            return user['accountStatus'] == 'Active';
+          case 'Pending KYC':
+            return user['kycStatus'] == 'Pending';
+          case 'Suspended':
+            return user['accountStatus'] == 'Suspended';
+          case 'Rejected':
+            return user['kycStatus'] == 'Rejected';
+          default:
+            return true;
+        }
+      }).toList();
+    }
+    
+    return filtered;
+  }
+
+  void _handleUserAction(String action, Map<String, dynamic> user) {
+    switch (action) {
+      case 'view':
+        _showUserDetails(user);
+        break;
+      case 'kyc':
+        _showKYCReview(user);
+        break;
+      case 'suspend':
+        _showSuspendDialog(user);
+        break;
+      case 'message':
+        _showMessageDialog(user);
+        break;
+    }
+  }
+
+  void _showUserDetails(Map<String, dynamic> user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('User Details: ${user['name']}'),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow('User ID', user['id']),
+              _buildDetailRow('Email', user['email']),
+              _buildDetailRow('Phone', user['phone']),
+              _buildDetailRow('KYC Status', user['kycStatus']),
+              _buildDetailRow('Account Status', user['accountStatus']),
+              _buildDetailRow('Gold Holdings', user['goldHoldings']),
+              _buildDetailRow('Total Value', user['totalValue']),
+              _buildDetailRow('Join Date', user['joinDate']),
+              _buildDetailRow('Last Login', user['lastLogin']),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            amount,
-            style: TextStyle(fontWeight: FontWeight.bold),
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
-          Text(
-            value,
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          Expanded(
+            child: Text(value),
           ),
         ],
       ),
     );
   }
 
-  void _showBuyDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Buy Gold'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Amount (RM)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Current Price: RM ${goldPrice.toStringAsFixed(2)}/g',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Buy order placed successfully!')),
-              );
-            },
-            child: Text('Buy'),
-          ),
-        ],
+  void _showKYCReview(Map<String, dynamic> user) {
+    // Placeholder for KYC review dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Opening KYC review for ${user['name']}'),
       ),
     );
   }
 
-  void _showSellDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Sell Gold'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Amount (grams)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Available: 2.4100 g',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            Text(
-              'Sell Price: RM ${(goldPrice * 0.964).toStringAsFixed(2)}/g',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Sell order placed successfully!')),
-              );
-            },
-            child: Text('Sell'),
-          ),
-        ],
+  void _showSuspendDialog(Map<String, dynamic> user) {
+    // Placeholder for suspend account dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Suspend account option for ${user['name']}'),
       ),
     );
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  void _showMessageDialog(Map<String, dynamic> user) {
+    // Placeholder for send message dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Send message to ${user['name']}'),
+      ),
+    );
+  }
+
+  void _showExportDialog() {
+    // Placeholder for export dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Export functionality coming soon'),
+      ),
+    );
+  }
+
+  void _showBulkActionsDialog() {
+    // Placeholder for bulk actions dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Bulk actions functionality coming soon'),
+      ),
+    );
   }
 }
