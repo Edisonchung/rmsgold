@@ -1,7 +1,6 @@
 // lib/widgets/price_chart_widget.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import 'dart:math';
 
 class PriceChartWidget extends StatefulWidget {
@@ -115,30 +114,8 @@ class _PriceChartWidgetState extends State<PriceChartWidget> {
           );
         },
       ),
-      titlesData: FlTitlesData(
-        show: true,
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 30,
-            interval: _getBottomInterval(),
-            getTitlesWidget: _bottomTitleWidgets,
-          ),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 2,
-            getTitlesWidget: _leftTitleWidgets,
-            reservedSize: 50,
-          ),
-        ),
+      titlesData: const FlTitlesData(
+        show: false,
       ),
       borderData: FlBorderData(
         show: false,
@@ -175,35 +152,19 @@ class _PriceChartWidgetState extends State<PriceChartWidget> {
           ),
         ),
       ],
-      lineTouchData: LineTouchData(
-        touchTooltipData: LineTouchTooltipData(
-          getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-            return touchedBarSpots.map((barSpot) {
-              return LineTooltipItem(
-                'RM ${barSpot.y.toStringAsFixed(2)}',
-                const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            }).toList();
-          },
-        ),
-      ),
     );
   }
 
   List<FlSpot> _generatePriceData() {
     final basePrice = 475.5;
     final random = Random();
-    final dataPoints = _getDataPointsForPeriod();
+    final dataPoints = 24; // 24 hours for demo
     
     List<FlSpot> spots = [];
     double currentPrice = basePrice;
     
     for (int i = 0; i < dataPoints; i++) {
-      // Simulate price movement
-      final change = (random.nextDouble() - 0.5) * 4; // ±2 range
+      final change = (random.nextDouble() - 0.5) * 4;
       currentPrice += change;
       currentPrice = currentPrice.clamp(basePrice - 10, basePrice + 10);
       
@@ -211,90 +172,5 @@ class _PriceChartWidgetState extends State<PriceChartWidget> {
     }
     
     return spots;
-  }
-
-  int _getDataPointsForPeriod() {
-    switch (_selectedPeriod) {
-      case '1D':
-        return 24; // 24 hours
-      case '1W':
-        return 7; // 7 days
-      case '1M':
-        return 30; // 30 days
-      case '3M':
-        return 90; // 90 days
-      case '1Y':
-        return 52; // 52 weeks
-      default:
-        return 24;
-    }
-  }
-
-  double _getBottomInterval() {
-    switch (_selectedPeriod) {
-      case '1D':
-        return 6; // Every 6 hours
-      case '1W':
-        return 1; // Every day
-      case '1M':
-        return 7; // Every week
-      case '3M':
-        return 30; // Every month
-      case '1Y':
-        return 13; // Every quarter
-      default:
-        return 6;
-    }
-  }
-
-  Widget _bottomTitleWidgets(double value, TitleMeta meta) {
-    const style = TextStyle(
-      fontSize: 10,
-      color: Colors.grey,
-    );
-
-    String text = '';
-    switch (_selectedPeriod) {
-      case '1D':
-        text = '${(value * 1).toInt()}h';
-        break;
-      case '1W':
-        final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        if (value.toInt() < days.length) {
-          text = days[value.toInt()];
-        }
-        break;
-      case '1M':
-        text = '${(value + 1).toInt()}';
-        break;
-      case '3M':
-        text = 'W${(value / 7 + 1).toInt()}';
-        break;
-      case '1Y':
-        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        if ((value / 4).toInt() < months.length) {
-          text = months[(value / 4).toInt()];
-        }
-        break;
-    }
-
-    return SideTitleWidget(
-      axisSide: meta.axisSide,
-      child: Text(text, style: style),
-    );
-  }
-
-  Widget _leftTitleWidgets(double value, TitleMeta meta) {
-    const style = TextStyle(
-      fontSize: 10,
-      color: Colors.grey,
-    );
-
-    return Text(
-      value.toInt().toString(),
-      style: style,
-      textAlign: TextAlign.left,
-    );
   }
 }
