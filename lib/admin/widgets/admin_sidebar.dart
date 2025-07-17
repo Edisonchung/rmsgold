@@ -100,12 +100,6 @@ class AdminSidebar extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (adminUser.mfaEnabled)
-                  Icon(
-                    Icons.security,
-                    color: Colors.green.shade600,
-                    size: 16,
-                  ),
               ],
             ),
           ),
@@ -119,7 +113,7 @@ class AdminSidebar extends StatelessWidget {
                   0,
                   Icons.dashboard,
                   'Dashboard',
-                  true, // Always accessible
+                  true,
                 ),
                 _buildNavItem(
                   1,
@@ -171,7 +165,7 @@ class AdminSidebar extends StatelessWidget {
             ),
           ),
 
-          // Footer with system status
+          // Footer
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -179,35 +173,13 @@ class AdminSidebar extends StatelessWidget {
                 top: BorderSide(color: Colors.grey.shade200),
               ),
             ),
-            child: Column(
+            child: const Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'System Online',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+                Icon(Icons.circle, color: Colors.green, size: 8),
+                SizedBox(width: 8),
                 Text(
-                  'Last login: ${_formatLastLogin(adminUser.lastLogin)}',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 11,
-                  ),
+                  'System Online',
+                  style: TextStyle(fontSize: 12),
                 ),
               ],
             ),
@@ -261,21 +233,6 @@ class AdminSidebar extends StatelessWidget {
         return 'KYC Officer';
       case AdminRole.support:
         return 'Support Staff';
-    }
-  }
-
-  String _formatLastLogin(DateTime lastLogin) {
-    final now = DateTime.now();
-    final difference = now.difference(lastLogin);
-    
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
     }
   }
 }
