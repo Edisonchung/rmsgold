@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
+import '../models/transaction_model.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -316,6 +317,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         return Icons.add_shopping_cart;
       case TransactionType.sell:
         return Icons.sell;
+      case TransactionType.convert:
+        return Icons.swap_horiz;
       case TransactionType.transfer:
         return Icons.swap_horiz;
       case TransactionType.withdrawal:
@@ -329,6 +332,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         return Colors.green;
       case TransactionType.sell:
         return Colors.blue;
+      case TransactionType.convert:
+        return Colors.orange;
       case TransactionType.transfer:
         return Colors.orange;
       case TransactionType.withdrawal:
@@ -471,7 +476,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Transaction Details'),
+        title: const Text('Transaction Details'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
