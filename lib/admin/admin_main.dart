@@ -341,6 +341,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_auth_provider.dart';
 import '../widgets/admin_sidebar.dart';
+import 'transaction_monitoring_screen.dart';
+import 'kyc_approval_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -680,9 +682,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildKYCContent() {
-    return const Center(
-      child: Text('KYC Approval Content - Coming Next'),
-    );
+    return const KYCApprovalScreen();
   }
 
   Widget _buildReportsContent() {
