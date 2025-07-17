@@ -2,14 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "pubspec.yaml",
-      "use": "https://github.com/lengau/vercel-flutter"
+      "src": "build/web/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/build/web/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/build/web/index.html"
     }
   ]
 }
