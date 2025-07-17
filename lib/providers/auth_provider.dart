@@ -1,62 +1,88 @@
-// lib/providers/auth_provider.dart
+// lib/admin/providers/admin_auth_provider.dart
 import 'package:flutter/foundation.dart';
 
-class User {
+enum AdminRole { superAdmin, kycOfficer, support }
+
+class AdminUser {
   final String id;
   final String email;
   final String name;
-  final String phone;
-  final bool kycApproved;
-  final DateTime joinDate;
+  final AdminRole role;
+  final List<String> permissions;
+  final bool mfaEnabled;
+  final DateTime lastLogin;
 
-  User({
+  AdminUser({
     required this.id,
     required this.email,
     required this.name,
-    required this.phone,
-    required this.kycApproved,
-    required this.joinDate,
+    required this.role,
+    required this.permissions,
+    required this.mfaEnabled,
+    required this.lastLogin,
   });
+
+  factory AdminUser.fromJson(Map<String, dynamic> json) {
+    return AdminUser(
+      id: json['id'],
+      email: json['email'],
+      name: json['name'],
+      role: AdminRole.values.firstWhere(
+        (e) => e.toString().split('.').last == json['role'],
+      ),
+      permissions: List<String>.from(json['permissions'] ?? []),
+      mfaEnabled: json['mfaEnabled'] ?? false,
+      lastLogin: DateTime.parse(json['lastLogin']),
+    );
+  }
 }
 
-class AuthProvider extends ChangeNotifier {
-  User? _currentUser;
+class AdminAuthProvider extends ChangeNotifier {
+  AdminUser? _currentAdmin;
   bool _isLoading = false;
-  String? _errorMessage;
 
-  User? get currentUser => _currentUser;
-  bool get isAuthenticated => _currentUser != null;
+  AdminUser? get currentAdmin => _currentAdmin;
+  bool get isAuthenticated => _currentAdmin != null;
   bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
 
   Future<bool> signIn(String email, String password) async {
     _isLoading = true;
-    _errorMessage = null;
     notifyListeners();
 
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (email == 'demo@rmsgold.com' && password == 'demo123456') {
-        _currentUser = User(
-          id: 'demo-user-001',
+      // Demo admin credentials
+      if (email == 'admin@rmsgold.com' && password == 'admin123456') {
+        _currentAdmin = AdminUser(
+          id: 'admin-001',
           email: email,
-          name: 'Demo User',
-          phone: '+60123456789',
-          kycApproved: true,
-          joinDate: DateTime.now().subtract(const Duration(days: 30)),
+          name: 'System Administrator',
+          role: AdminRole.superAdmin,
+          permissions: ['user_management', 'transaction_oversight', 'system_config'],
+          mfaEnabled: false,
+          lastLogin: DateTime.now(),
         );
         _isLoading = false;
         notifyListeners();
         return true;
-      } else {
-        _errorMessage = 'Invalid email or password';
+      } else if (email == 'kyc@rmsgold.com' && password == 'kyc123456') {
+        _currentAdmin = AdminUser(
+          id: 'kyc-001',
+          email: email,
+          name: 'KYC Officer',
+          role: AdminRole.kycOfficer,
+          permissions: ['kyc_approval', 'user_management'],
+          mfaEnabled: true,
+          lastLogin: DateTime.now(),
+        );
         _isLoading = false;
         notifyListeners();
-        return false;
+        return true;
       }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
-      _errorMessage = 'Login failed: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -64,13 +90,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void signOut() {
-    _currentUser = null;
-    _errorMessage = null;
+    _currentAdmin = null;
     notifyListeners();
   }
 
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
+  bool hasPermission(String permission) {
+    return _currentAdmin?.permissions.contains(permission) ?? false;
   }
 }
