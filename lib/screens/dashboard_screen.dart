@@ -1,4 +1,4 @@
-// ===== lib/screens/dashboard_screen.dart =====
+// lib/screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -6,11 +6,14 @@ import '../providers/auth_provider.dart';
 import '../providers/gold_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/notification_provider.dart';
+import '../models/transaction_model.dart';
 import '../widgets/gold_price_card.dart';
 import '../widgets/portfolio_card.dart';
 import '../widgets/quick_actions_card.dart';
 import '../widgets/price_chart_widget.dart';
 import '../widgets/notification_icon.dart';
+import 'transaction_history_screen.dart';
+import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,11 +25,17 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardHomeScreen(),
-    const TransactionHistoryScreen(),
-    const ProfileScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const DashboardHomeScreen(),
+      const TransactionHistoryScreen(),
+      const ProfileScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
