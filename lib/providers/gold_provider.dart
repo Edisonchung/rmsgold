@@ -1,4 +1,3 @@
-// lib/providers/gold_provider.dart
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:math';
@@ -9,6 +8,7 @@ class GoldPrice {
   final double spread;
   final DateTime timestamp;
   final String currency;
+  final String source;
 
   GoldPrice({
     required this.buyPrice,
@@ -16,6 +16,7 @@ class GoldPrice {
     required this.spread,
     required this.timestamp,
     this.currency = 'MYR',
+    this.source = 'Bloomberg',
   });
 }
 
@@ -24,6 +25,7 @@ class Portfolio {
   final double totalValue;
   final double profitLoss;
   final double profitLossPercentage;
+  final double averagePurchasePrice;
   final DateTime lastUpdated;
 
   Portfolio({
@@ -31,6 +33,7 @@ class Portfolio {
     required this.totalValue,
     required this.profitLoss,
     required this.profitLossPercentage,
+    required this.averagePurchasePrice,
     required this.lastUpdated,
   });
 }
@@ -83,6 +86,7 @@ class GoldProvider extends ChangeNotifier {
       sellPrice: double.parse(sellPrice.toStringAsFixed(2)),
       spread: spreadPercentage,
       timestamp: DateTime.now(),
+      source: 'Bloomberg',
     );
     
     notifyListeners();
@@ -101,6 +105,7 @@ class GoldProvider extends ChangeNotifier {
       totalValue: double.parse(currentValue.toStringAsFixed(2)),
       profitLoss: double.parse(profitLoss.toStringAsFixed(2)),
       profitLossPercentage: double.parse(profitLossPercentage.toStringAsFixed(2)),
+      averagePurchasePrice: _demoPurchaseAverage,
       lastUpdated: DateTime.now(),
     );
     
