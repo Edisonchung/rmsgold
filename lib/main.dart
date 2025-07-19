@@ -22,11 +22,27 @@ import 'admin/admin_main.dart';
 import 'admin/screens/admin_dashboard.dart';
 import 'admin/screens/admin_login_screen.dart';
 
+// Global variable to track Firebase initialization status
+bool _firebaseInitialized = false;
+String? _firebaseError;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  
+  // Try to initialize Firebase, but don't let it block the app
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    _firebaseInitialized = true;
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    _firebaseInitialized = false;
+    _firebaseError = e.toString();
+    print('⚠️ Firebase initialization failed: $e');
+    print('📱 Running in demo mode - Firebase features disabled');
+  }
+  
   runApp(MyApp());
 }
 
@@ -91,15 +107,16 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Enhanced Auth Gateway with Admin Detection
+// Enhanced Auth Gateway with Admin Detection and Firebase Status
 class AuthGateway extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Check current route to determine if it's an admin route
     final route = ModalRoute.of(context)?.settings.name ?? '';
+    final currentPath = Uri.base.path;
     
     // If it's an admin route, show AdminApp
-    if (route.startsWith('/admin') || Uri.base.path.startsWith('/admin')) {
+    if (route.startsWith('/admin') || currentPath.startsWith('/admin')) {
       return AdminApp();
     }
     
@@ -115,7 +132,7 @@ class AuthGateway extends StatelessWidget {
   }
 }
 
-// Enhanced Login Screen with Admin Access
+// Enhanced Login Screen with Admin Access and Firebase Status
 class EnhancedLoginScreen extends StatefulWidget {
   @override
   _EnhancedLoginScreenState createState() => _EnhancedLoginScreenState();
@@ -150,6 +167,36 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Firebase Status Banner
+              if (!_firebaseInitialized) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber, color: Colors.orange[800], size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Running in Demo Mode - Firebase Offline',
+                          style: TextStyle(
+                            color: Colors.orange[800],
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+              ],
+              
               // Logo and title
               Container(
                 width: 80,
@@ -181,6 +228,17 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                   color: Colors.grey[600],
                 ),
               ),
+              if (!_firebaseInitialized) ...[
+                SizedBox(height: 4),
+                Text(
+                  '(Demo Mode Active)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
               SizedBox(height: 32),
               
               // Toggle between user and admin login
@@ -297,18 +355,29 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: _firebaseInitialized ? Colors.blue[50] : Colors.green[50],
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
+                  border: Border.all(color: _firebaseInitialized ? Colors.blue[200]! : Colors.green[200]!),
                 ),
                 child: Column(
                   children: [
-                    Text(
-                      'Demo Credentials',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue[800],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _firebaseInitialized ? Icons.cloud : Icons.computer,
+                          size: 16,
+                          color: _firebaseInitialized ? Colors.blue[800] : Colors.green[800],
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          _firebaseInitialized ? 'Live Credentials' : 'Demo Credentials',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _firebaseInitialized ? Colors.blue[800] : Colors.green[800],
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 8),
                     if (_isAdminLogin) ...[
@@ -357,6 +426,31 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                   child: Text('Quick Demo Login'),
                 ),
               ],
+              
+              // Firebase status debug info (only in debug mode)
+              if (!_firebaseInitialized && _firebaseError != null) ...[
+                SizedBox(height: 16),
+                ExpansionTile(
+                  title: Text(
+                    'Debug Info',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        _firebaseError!,
+                        style: TextStyle(fontSize: 10, color: Colors.grey[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -378,7 +472,7 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
     
     try {
       if (_isAdminLogin) {
-        // Navigate to admin portal
+        // Navigate to admin portal with credentials pre-filled
         Navigator.pushReplacementNamed(context, '/admin');
       } else {
         // User login
@@ -392,7 +486,7 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
         }
       }
     } catch (e) {
-      _showErrorDialog('Login failed. Please try again.');
+      _showErrorDialog('Login failed. Please try again. Error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
