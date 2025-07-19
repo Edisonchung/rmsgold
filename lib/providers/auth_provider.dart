@@ -1,114 +1,137 @@
 // lib/providers/auth_provider.dart
-import 'package:flutter/foundation.dart';
-import '../models/user_model.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class AuthProvider extends ChangeNotifier {
-  User? _currentUser;
+class AuthProvider with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  User? _user;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _firebaseAvailable;
 
-  User? get currentUser => _currentUser;
-  bool get isAuthenticated => _currentUser != null;
+  User? get user => _user;
+  bool get isAuthenticated => _user != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  AuthProvider() {
-    _initializeDemoUser();
+  AuthProvider({bool firebaseAvailable = true}) : _firebaseAvailable = firebaseAvailable {
+    // Listen to auth state changes only if Firebase is available
+    if (_firebaseAvailable) {
+      try {
+        _auth.authStateChanges().listen((User? user) {
+          _user = user;
+          notifyListeners();
+        });
+      } catch (e) {
+        print('Error setting up auth state listener: $e');
+        _firebaseAvailable = false;
+      }
+    }
   }
 
-  void _initializeDemoUser() {
-    // Initialize with demo user for presentation
-    _currentUser = User(
-      id: 'demo-user-001',
-      email: 'demo@rmsgold.com',
-      name: 'Demo User',
-      phone: '+60123456789',
-      icNumber: '123456-12-1234',
-      address: 'Demo Address, Kuala Lumpur',
-      bankAccount: 'Maybank - ****1234',
-      kycApproved: true,
-      mfaEnabled: false,
-      joinDate: DateTime.now().subtract(const Duration(days: 30)),
-      kycStatus: KYCStatus.approved,
-    );
-    notifyListeners();
-  }
-
-  Future<bool> signIn(String email, String password) async {
+  Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Simulate sign in delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Demo credentials
+      // Demo mode for specific emails
       if (email == 'demo@rmsgold.com' && password == 'demo123456') {
-        _currentUser = User(
-          id: 'demo-user-001',
-          email: email,
-          name: 'Demo User',
-          phone: '+60123456789',
-          icNumber: '123456-12-1234',
-          address: 'Demo Address, Kuala Lumpur',
-          bankAccount: 'Maybank - ****1234',
-          kycApproved: true,
-          mfaEnabled: false,
-          joinDate: DateTime.now().subtract(const Duration(days: 30)),
-          kycStatus: KYCStatus.approved,
-        );
-        
+        // Simulate demo login
+        await Future.delayed(Duration(seconds: 1));
         _isLoading = false;
         notifyListeners();
         return true;
       }
 
-      _errorMessage = 'Invalid credentials';
+      // Try Firebase authentication if available
+      if (_firebaseAvailable) {
+        try {
+          final credential = await _auth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          
+          _user = credential.user;
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        } on FirebaseAuthException catch (e) {
+          // Handle Firebase errors
+          switch (e.code) {
+            case 'user-not-found':
+              _errorMessage = 'No user found with this email.';
+              break;
+            case 'wrong-password':
+              _errorMessage = 'Incorrect password.';
+              break;
+            case 'invalid-email':
+              _errorMessage = 'Invalid email format.';
+              break;
+            case 'too-many-requests':
+              _errorMessage = 'Too many failed attempts. Try again later.';
+              break;
+            default:
+              _errorMessage = 'Login failed: ${e.message}';
+          }
+        }
+      } else {
+        _errorMessage = 'Authentication service unavailable. Use demo credentials.';
+      }
+
       _isLoading = false;
       notifyListeners();
       return false;
     } catch (e) {
-      _errorMessage = 'Sign in failed: $e';
+      _errorMessage = 'Login failed: $e';
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> register({
-    required String name,
-    required String email,
-    required String phone,
-    required String icNumber,
-    required String address,
-    required String password,
-  }) async {
+  Future<bool> register(String email, String password, String name) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Simulate registration delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Create new user (demo)
-      _currentUser = User(
-        id: 'user-${DateTime.now().millisecondsSinceEpoch}',
-        email: email,
-        name: name,
-        phone: phone,
-        icNumber: icNumber,
-        address: address,
-        kycApproved: false,
-        mfaEnabled: false,
-        joinDate: DateTime.now(),
-        kycStatus: KYCStatus.pending,
-      );
-
+      if (_firebaseAvailable) {
+        final credential = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        
+        // Update display name
+        await credential.user?.updateDisplayName(name);
+        
+        _user = credential.user;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = 'Registration service unavailable.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'weak-password':
+          _errorMessage = 'Password is too weak.';
+          break;
+        case 'email-already-in-use':
+          _errorMessage = 'An account already exists with this email.';
+          break;
+        case 'invalid-email':
+          _errorMessage = 'Invalid email format.';
+          break;
+        default:
+          _errorMessage = 'Registration failed: ${e.message}';
+      }
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
     } catch (e) {
       _errorMessage = 'Registration failed: $e';
       _isLoading = false;
@@ -117,108 +140,22 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void signOut() {
-    _currentUser = null;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> signOut() async {
+    try {
+      if (_firebaseAvailable) {
+        await _auth.signOut();
+      }
+    } catch (e) {
+      print('Error signing out: $e');
+    } finally {
+      _user = null;
+      _errorMessage = null;
+      notifyListeners();
+    }
   }
 
   void clearError() {
     _errorMessage = null;
     notifyListeners();
-  }
-
-  Future<bool> resetPassword(String email) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Simulate password reset
-      await Future.delayed(const Duration(seconds: 1));
-      
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = 'Password reset failed: $e';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> updateProfile({
-    String? name,
-    String? phone,
-    String? address,
-  }) async {
-    if (_currentUser == null) return false;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Simulate update delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      _currentUser = User(
-        id: _currentUser!.id,
-        email: _currentUser!.email,
-        name: name ?? _currentUser!.name,
-        phone: phone ?? _currentUser!.phone,
-        icNumber: _currentUser!.icNumber,
-        address: address ?? _currentUser!.address,
-        bankAccount: _currentUser!.bankAccount,
-        kycApproved: _currentUser!.kycApproved,
-        mfaEnabled: _currentUser!.mfaEnabled,
-        joinDate: _currentUser!.joinDate,
-        profileImageUrl: _currentUser!.profileImageUrl,
-        kycStatus: _currentUser!.kycStatus,
-      );
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = 'Profile update failed: $e';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> enableMFA() async {
-    if (_currentUser == null) return false;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-
-      _currentUser = User(
-        id: _currentUser!.id,
-        email: _currentUser!.email,
-        name: _currentUser!.name,
-        phone: _currentUser!.phone,
-        icNumber: _currentUser!.icNumber,
-        address: _currentUser!.address,
-        bankAccount: _currentUser!.bankAccount,
-        kycApproved: _currentUser!.kycApproved,
-        mfaEnabled: true,
-        joinDate: _currentUser!.joinDate,
-        profileImageUrl: _currentUser!.profileImageUrl,
-        kycStatus: _currentUser!.kycStatus,
-      );
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = 'MFA enable failed: $e';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
   }
 }
