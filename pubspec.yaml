@@ -1,10 +1,10 @@
 name: rmsgold
-description: RMS Gold Account-i - Digital Gold Trading Platform
+description: RMS Gold Account-i - Digital Gold Trading Platform for Rakyat Management Services
 version: 1.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.10.0"
+  flutter: ">=3.16.0"
 
 dependencies:
   flutter:
@@ -15,29 +15,105 @@ dependencies:
   provider: ^6.1.1
   intl: ^0.19.0
   
-  # Firebase dependencies for backend (demo mode - not connected yet)
+  # Firebase dependencies for backend
   firebase_core: ^2.24.2
   firebase_auth: ^4.15.3
   cloud_firestore: ^4.13.6
   firebase_storage: ^11.6.0
+  firebase_messaging: ^14.7.10
   
   # Charts and visualization for admin dashboard
-  fl_chart: ^0.66.0
+  fl_chart: ^0.66.2
+  syncfusion_flutter_charts: ^23.2.7
+  
+  # Enhanced Authentication & Security
+  local_auth: ^2.1.6
+  crypto: ^3.0.3
+  
+  # File handling for KYC documents
+  file_picker: ^6.1.1
+  image_picker: ^1.0.4
+  
+  # Document viewing and processing
+  flutter_pdfview: ^1.3.2
+  pdf: ^3.10.7
+  
+  # Export functionality
+  excel: ^2.1.0
+  csv: ^5.1.1
+  
+  # Push notifications
+  flutter_local_notifications: ^16.3.0
+  
+  # Network and API
+  http: ^1.2.0
+  dio: ^5.4.0
   
   # Additional utilities
-  http: ^1.1.2
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.2
+  permission_handler: ^11.0.1
+  url_launcher: ^6.2.2
+  device_info_plus: ^9.1.1
+  
+  # Payment gateway dependencies
+  webview_flutter: ^4.4.2
+  
+  # Enhanced UI components
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+  lottie: ^2.7.0
+  
+  # Date and time utilities
+  timeago: ^3.6.0
+  
+  # QR Code for payment confirmations
+  qr_flutter: ^4.1.0
+  qr_code_scanner: ^1.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.1
+  flutter_lints: ^3.0.2
+  
+  # Testing dependencies
+  mockito: ^5.4.4
+  integration_test:
+    sdk: flutter
+  
+  # Build tools
+  build_runner: ^2.4.7
 
 flutter:
   uses-material-design: true
+  
   assets:
     - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - assets/certificates/
+  
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
 
 # Build configuration for web deployment
 flutter_build_web:
   web-renderer: html
   tree-shake-icons: true
+  
+# Platform-specific configurations
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+
+# App metadata for stores
+flutter_app_name: "RMS Gold Account-i"
+flutter_app_description: "Digital Gold Trading Platform by Rakyat Management Services"
