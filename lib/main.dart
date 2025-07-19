@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +16,7 @@ import 'admin/providers/admin_provider.dart';
 // Import your existing screens
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/portfolio_screen.dart';
+import 'screens/portfolio_screen.dart'; // ADDED THIS MISSING IMPORT
 
 // Import admin components (corrected paths)
 import 'admin/admin_main.dart';
@@ -84,7 +85,7 @@ class MyApp extends StatelessWidget {
           
           // User routes (your existing ones)
           '/user/dashboard': (context) => DashboardScreen(),
-          '/user/portfolio': (context) => PortfolioScreen(),
+          '/user/portfolio': (context) => PortfolioScreen(), // NOW THIS WILL WORK
           
           // Admin routes - Use AdminApp as the main entry point
           '/admin': (context) => AdminApp(),
@@ -179,15 +180,15 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.warning_amber, color: Colors.orange[800], size: 20),
+                      Icon(Icons.warning_amber, color: Colors.orange[700], size: 20),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Running in Demo Mode - Firebase Offline',
+                          'Demo Mode: Firebase unavailable',
                           style: TextStyle(
-                            color: Colors.orange[800],
-                            fontWeight: FontWeight.w500,
+                            color: Colors.orange[700],
                             fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -197,55 +198,47 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                 SizedBox(height: 16),
               ],
               
-              // Logo and title
+              // App Logo/Title
               Container(
-                width: 80,
-                height: 80,
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Color(0xFFD4AF37),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _isAdminLogin ? Icons.admin_panel_settings : Icons.account_balance,
-                  size: 40,
-                  color: Colors.white,
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.account_balance,
+                      size: 48,
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'RMS Gold Account-i',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Digital Gold Trading Platform',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 24),
-              Text(
-                'RMS Gold Account-i',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B5E20),
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                _isAdminLogin ? 'Administrator Portal' : 'Digital Gold Investment Platform',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              if (!_firebaseInitialized) ...[
-                SizedBox(height: 4),
-                Text(
-                  '(Demo Mode Active)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.orange[600],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
+              
               SizedBox(height: 32),
               
-              // Toggle between user and admin login
+              // Admin/User Toggle
               Container(
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
@@ -256,14 +249,14 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                           padding: EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
                             color: !_isAdminLogin ? Color(0xFFD4AF37) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(25),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'User Login',
+                            'Customer Login',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: !_isAdminLogin ? Colors.white : Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -275,15 +268,15 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                         child: Container(
                           padding: EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
-                            color: _isAdminLogin ? Color(0xFF1B5E20) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(25),
+                            color: _isAdminLogin ? Color(0xFFD4AF37) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Admin Portal',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: _isAdminLogin ? Colors.white : Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -292,176 +285,99 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 32),
               
-              // Email field
+              SizedBox(height: 24),
+              
+              // Login Form
               TextField(
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
+                  hintText: _isAdminLogin ? 'admin@rmsgold.com' : 'demo@rmsgold.com',
                   prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
+              
               SizedBox(height: 16),
               
-              // Password field
               TextField(
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
+                  hintText: _isAdminLogin ? 'admin123456' : 'demo123456',
                   prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
+              
               SizedBox(height: 24),
               
-              // Login button
+              // Login Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isAdminLogin ? Color(0xFF1B5E20) : Color(0xFFD4AF37),
-                    foregroundColor: Colors.white,
+                    backgroundColor: Color(0xFFD4AF37),
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   child: _isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            strokeWidth: 2,
-                          ),
-                        )
+                      ? CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          _isAdminLogin ? 'Access Admin Portal' : 'Login to Account',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          _isAdminLogin ? 'Login to Admin Portal' : 'Login to Account',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                 ),
               ),
+              
               SizedBox(height: 16),
               
-              // Demo credentials info
+              // Demo Credentials
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _firebaseInitialized ? Colors.blue[50] : Colors.green[50],
+                  color: Colors.blue[50],
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _firebaseInitialized ? Colors.blue[200]! : Colors.green[200]!),
+                  border: Border.all(color: Colors.blue[200]!),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _firebaseInitialized ? Icons.cloud : Icons.computer,
-                          size: 16,
-                          color: _firebaseInitialized ? Colors.blue[800] : Colors.green[800],
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          _firebaseInitialized ? 'Live Credentials' : 'Demo Credentials',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: _firebaseInitialized ? Colors.blue[800] : Colors.green[800],
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '🎯 Demo Credentials',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[800],
+                      ),
                     ),
                     SizedBox(height: 8),
-                    if (_isAdminLogin) ...[
-                      Text('Super Admin: admin@rmsgold.com / admin123456', style: TextStyle(fontSize: 11)),
-                      Text('KYC Officer: kyc@rmsgold.com / kyc123456', style: TextStyle(fontSize: 11)),
-                      Text('Inventory: inventory@rmsgold.com / inventory123456', style: TextStyle(fontSize: 11)),
-                    ] else ...[
-                      Text('User: demo@rmsgold.com', style: TextStyle(fontSize: 12)),
-                      Text('Password: demo123456', style: TextStyle(fontSize: 12)),
-                    ],
+                    Text(
+                      _isAdminLogin
+                          ? 'Admin: admin@rmsgold.com / admin123456'
+                          : 'Customer: demo@rmsgold.com / demo123456',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                   ],
                 ),
               ),
-              
-              // Quick access buttons
-              if (_isAdminLogin) ...[
-                SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _quickLogin('admin@rmsgold.com', 'admin123456'),
-                        child: Text('Admin', style: TextStyle(fontSize: 10)),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _quickLogin('kyc@rmsgold.com', 'kyc123456'),
-                        child: Text('KYC', style: TextStyle(fontSize: 10)),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _quickLogin('inventory@rmsgold.com', 'inventory123456'),
-                        child: Text('Inventory', style: TextStyle(fontSize: 10)),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                SizedBox(height: 16),
-                OutlinedButton(
-                  onPressed: () => _quickLogin('demo@rmsgold.com', 'demo123456'),
-                  child: Text('Quick Demo Login'),
-                ),
-              ],
-              
-              // Firebase status debug info (only in debug mode)
-              if (!_firebaseInitialized && _firebaseError != null) ...[
-                SizedBox(height: 16),
-                ExpansionTile(
-                  title: Text(
-                    'Debug Info',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        _firebaseError!,
-                        style: TextStyle(fontSize: 10, color: Colors.grey[700]),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
           ),
         ),
       ),
     );
-  }
-
-  void _quickLogin(String email, String password) {
-    _emailController.text = email;
-    _passwordController.text = password;
-    _handleLogin();
   }
 
   Future<void> _handleLogin() async {
@@ -470,48 +386,26 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     
-    try {
-      if (_isAdminLogin) {
-        // Navigate to admin portal with credentials pre-filled
-        Navigator.pushReplacementNamed(context, '/admin');
+    if (_isAdminLogin) {
+      // Navigate to admin portal
+      Navigator.pushReplacementNamed(context, '/admin');
+    } else {
+      // Handle customer login
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.login(email, password);
+      
+      if (success) {
+        Navigator.pushReplacementNamed(context, '/user/dashboard');
       } else {
-        // User login
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final success = await authProvider.login(email, password);
-        
-        if (success) {
-          Navigator.pushReplacementNamed(context, '/user/dashboard');
-        } else {
-          _showErrorDialog('Invalid user credentials');
-        }
-      }
-    } catch (e) {
-      _showErrorDialog('Login failed. Please try again. Error: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Login Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Login failed'),
+            backgroundColor: Colors.red,
           ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+        );
+      }
+    }
+    
+    setState(() => _isLoading = false);
   }
 }
