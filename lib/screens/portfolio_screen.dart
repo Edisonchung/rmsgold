@@ -1,228 +1,417 @@
-// lib/screens/portfolio_screen.dart
+// lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/gold_provider.dart';
+// Remove conflicting import - we'll use AuthProvider's User model
+// import '../models/user_model.dart';
 
-class PortfolioScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _notificationsEnabled = true;
+  bool _biometricEnabled = false;
+  bool _mfaEnabled = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('My Portfolio'),
-        backgroundColor: Color(0xFFD4AF37),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              Provider.of<AuthProvider>(context, listen: false).signOut();
-              Navigator.pushReplacementNamed(context, '/');
-            },
-          ),
-        ],
-      ),
-      body: Consumer2<AuthProvider, GoldProvider>(
-        builder: (context, authProvider, goldProvider, child) {
+      body: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          final user = auth.currentUser;
+          
+          if (user == null) {
+            return const Center(
+              child: Text('User not found'),
+            );
+          }
+
           return SingleChildScrollView(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Portfolio Summary Card
-                Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Portfolio Summary',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1B5E20),
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Total Gold Holdings',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                Text(
-                                  '2.5000g',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFD4AF37),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'Current Value',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                Text(
-                                  // FIXED: Changed from goldProvider.currentPrice to goldProvider.currentPriceValue
-                                  'RM ${(2.5 * (goldProvider.currentPrice?.buyPrice ?? 0.0)).toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1B5E20),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16),
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.green[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green[200]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.trending_up, color: Colors.green[700], size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                // FIXED: Changed from goldProvider.currentPrice to goldProvider.currentPrice?.buyPrice ?? 0.0
-                                'Profit: +RM ${((2.5 * (goldProvider.currentPrice?.buyPrice ?? 0.0)) - (2.5 * 470)).toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: Colors.green[700],
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                // Profile Header
+                _buildProfileHeader(user),
+                const SizedBox(height: 24),
                 
-                SizedBox(height: 20),
+                // Account Information
+                _buildAccountSection(user),
+                const SizedBox(height: 24),
                 
-                // Quick Actions
-                Text(
-                  'Quick Actions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B5E20),
-                  ),
-                ),
-                SizedBox(height: 12),
+                // Security Settings
+                _buildSecuritySection(),
+                const SizedBox(height: 24),
                 
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/user/dashboard');
-                        },
-                        icon: Icon(Icons.add_shopping_cart),
-                        label: Text('Buy Gold'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFD4AF37),
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          // Navigate to sell screen
-                        },
-                        icon: Icon(Icons.sell),
-                        label: Text('Sell Gold'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1B5E20),
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // Preferences
+                _buildPreferencesSection(),
+                const SizedBox(height: 24),
                 
-                SizedBox(height: 20),
+                // Support & Help
+                _buildSupportSection(),
+                const SizedBox(height: 24),
                 
-                // Recent Transactions
-                Text(
-                  'Recent Transactions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B5E20),
-                  ),
-                ),
-                SizedBox(height: 12),
-                
-                Card(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: 3,
-                    separatorBuilder: (context, index) => Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final transactions = [
-                        {'type': 'Buy', 'amount': '1.0000g', 'price': 'RM 475.50', 'date': '2025-07-19'},
-                        {'type': 'Buy', 'amount': '0.5000g', 'price': 'RM 237.75', 'date': '2025-07-18'},
-                        {'type': 'Buy', 'amount': '1.0000g', 'price': 'RM 470.00', 'date': '2025-07-17'},
-                      ];
-                      
-                      final transaction = transactions[index];
-                      final isBuy = transaction['type'] == 'Buy';
-                      
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: isBuy ? Colors.green[100] : Colors.red[100],
-                          child: Icon(
-                            isBuy ? Icons.add : Icons.remove,
-                            color: isBuy ? Colors.green[700] : Colors.red[700],
-                          ),
-                        ),
-                        title: Text('${transaction['type']} ${transaction['amount']}'),
-                        subtitle: Text(transaction['date']!),
-                        trailing: Text(
-                          transaction['price']!,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isBuy ? Colors.green[700] : Colors.red[700],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                // Logout Button
+                _buildLogoutButton(auth),
               ],
             ),
           );
         },
       ),
     );
+  }
+
+  Widget _buildProfileHeader(User user) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.amber.shade700,
+              child: Text(
+                user.name.substring(0, 1).toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              user.name,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              user.email,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: user.isKYCVerified ? Colors.green.shade100 : Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: user.isKYCVerified ? Colors.green.shade300 : Colors.orange.shade300,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    user.isKYCVerified ? Icons.verified : Icons.pending,
+                    size: 16,
+                    color: user.isKYCVerified ? Colors.green.shade700 : Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    user.isKYCVerified ? 'KYC Verified' : 'KYC Pending',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: user.isKYCVerified ? Colors.green.shade700 : Colors.orange.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountSection(User user) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Account Information',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow('Full Name', user.name),
+            _buildInfoRow('Email Address', user.email),
+            _buildInfoRow('Phone Number', user.phoneNumber ?? 'Not provided'),
+            _buildInfoRow('Account ID', user.id),
+            _buildInfoRow('Member Since', _formatDate(user.createdAt)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecuritySection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Security Settings',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildSwitchRow(
+              'Multi-Factor Authentication',
+              'Add an extra layer of security',
+              _mfaEnabled,
+              (value) => setState(() => _mfaEnabled = value),
+            ),
+            _buildSwitchRow(
+              'Biometric Login',
+              'Use fingerprint or face ID',
+              _biometricEnabled,
+              (value) => setState(() => _biometricEnabled = value),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.key),
+              title: const Text('Change Password'),
+              subtitle: const Text('Update your account password'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                // Navigate to change password screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Change password feature coming soon')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreferencesSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Preferences',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildSwitchRow(
+              'Push Notifications',
+              'Receive price alerts and updates',
+              _notificationsEnabled,
+              (value) => setState(() => _notificationsEnabled = value),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.language),
+              title: const Text('Language'),
+              subtitle: const Text('English (Malaysia)'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Language settings coming soon')),
+                );
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.currency_exchange),
+              title: const Text('Currency'),
+              subtitle: const Text('Malaysian Ringgit (RM)'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Currency settings coming soon')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupportSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Support & Help',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Help Center'),
+              subtitle: const Text('FAQs and tutorials'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Help center coming soon')),
+                );
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.chat),
+              title: const Text('Contact Support'),
+              subtitle: const Text('Get help from our team'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Support chat coming soon')),
+                );
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description),
+              title: const Text('Terms & Privacy'),
+              subtitle: const Text('Legal documents'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Legal documents coming soon')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton(AuthProvider auth) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Logout'),
+              content: const Text('Are you sure you want to logout?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Logout'),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmed == true) {
+            await auth.signOut();
+            if (mounted) {
+              Navigator.pushReplacementNamed(context, '/');
+            }
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: const Text(
+          'Logout',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchRow(
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title),
+      subtitle: Text(subtitle),
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
