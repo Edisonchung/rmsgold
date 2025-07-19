@@ -26,6 +26,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       appBar: AppBar(
         title: Text('RMS Gold Admin Dashboard'),
         backgroundColor: Color(0xFF1B4332),
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
@@ -42,12 +43,35 @@ class _AdminDashboardState extends State<AdminDashboard> {
       body: Consumer<AdminProvider>(
         builder: (context, adminProvider, child) {
           if (adminProvider.isLoading) {
-            return Center(child: CircularProgressIndicator());
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF1B4332)),
+                  SizedBox(height: 16),
+                  Text('Loading dashboard data...'),
+                ],
+              ),
+            );
           }
 
           final dashboardData = adminProvider.dashboardData;
           if (dashboardData == null) {
-            return Center(child: Text('Failed to load dashboard data'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text('Failed to load dashboard data'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => adminProvider.loadDashboardData(),
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
 
           return SingleChildScrollView(
@@ -340,9 +364,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: _getAlertColor(alert.severity).withOpacity(0.1),
-                            border: Border.left(
-                              width: 4,
-                              color: _getAlertColor(alert.severity),
+                            border: Border(
+                              left: BorderSide(
+                                width: 4,
+                                color: _getAlertColor(alert.severity),
+                              ),
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -391,6 +417,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   child: Text('Review All'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF1B4332),
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],
@@ -519,25 +546,89 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   void _showNotifications(BuildContext context) {
-    // TODO: Implement notifications popup
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Notifications'),
+        content: Text('No new notifications'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAdminProfile(BuildContext context) {
-    // TODO: Implement admin profile
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Admin Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Admin: admin@rmsgold.com'),
+            Text('Role: Super Administrator'),
+            Text('Last Login: ${_formatTime(DateTime.now())}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _approveKYC(String userId) {
     context.read<AdminProvider>().approveKYC(userId);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('KYC approved successfully')),
+      SnackBar(
+        content: Text('KYC approved successfully'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 
   void _rejectKYC(String userId) {
-    // TODO: Show rejection reason dialog
-    context.read<AdminProvider>().rejectKYC(userId, 'Documents unclear');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('KYC rejected')),
+    showDialog(
+      context: context,
+      builder: (context) {
+        String reason = '';
+        return AlertDialog(
+          title: Text('Reject KYC'),
+          content: TextField(
+            decoration: InputDecoration(
+              labelText: 'Rejection Reason',
+              hintText: 'Enter reason for rejection',
+            ),
+            onChanged: (value) => reason = value,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                context.read<AdminProvider>().rejectKYC(userId, reason.isEmpty ? 'Documents unclear' : reason);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('KYC rejected'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              child: Text('Reject'),
+            ),
+          ],
+        );
+      },
     );
   }
 
