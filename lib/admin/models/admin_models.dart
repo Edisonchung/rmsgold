@@ -1,135 +1,27 @@
 // lib/admin/models/admin_models.dart
-enum AdminRole {
-  superAdmin,
-  kycOfficer,
-  inventoryManager,
-  customerService
-}
+import 'package:flutter/foundation.dart';
 
-enum Permission {
-  userManagement,
-  kycApproval,
-  priceManagement,
-  inventoryControl,
-  transactionMonitoring,
-  reporting,
-  systemConfig,
-  announcementManagement
-}
-
-enum ActivityType {
-  userRegistration,
-  goldPurchase,
-  goldSale,
-  kycSubmission,
-  kycApproval,
-  kycRejection,
-  priceUpdate,
-  inventoryUpdate,
-  systemAlert,
-  adminLogin,
-  suspiciousActivity
-}
-
-enum AlertSeverity {
-  low,
-  medium,
-  high,
-  critical
-}
-
-enum UserStatus {
-  active,
-  suspended,
-  banned,
-  pending
-}
-
-enum KYCStatus {
-  pending,
-  approved,
-  rejected,
-  incomplete
-}
-
-class AdminUser {
-  final String id;
-  final String email;
-  final String name;
-  final AdminRole role;
-  final List<Permission> permissions;
-  final DateTime createdAt;
-  final DateTime lastLogin;
-  final bool isActive;
-
-  AdminUser({
-    required this.id,
-    required this.email,
-    required this.name,
-    required this.role,
-    required this.permissions,
-    required this.createdAt,
-    required this.lastLogin,
-    this.isActive = true,
-  });
-
-  factory AdminUser.fromJson(Map<String, dynamic> json) {
-    return AdminUser(
-      id: json['id'],
-      email: json['email'],
-      name: json['name'],
-      role: AdminRole.values.firstWhere(
-        (e) => e.toString() == 'AdminRole.${json['role']}',
-      ),
-      permissions: (json['permissions'] as List)
-          .map((p) => Permission.values.firstWhere(
-                (e) => e.toString() == 'Permission.$p',
-              ))
-          .toList(),
-      createdAt: DateTime.parse(json['createdAt']),
-      lastLogin: DateTime.parse(json['lastLogin']),
-      isActive: json['isActive'] ?? true,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'email': email,
-      'name': name,
-      'role': role.toString().split('.').last,
-      'permissions': permissions.map((p) => p.toString().split('.').last).toList(),
-      'createdAt': createdAt.toIso8601String(),
-      'lastLogin': lastLogin.toIso8601String(),
-      'isActive': isActive,
-    };
-  }
-}
-
+// Dashboard Data Model
 class DashboardData {
   final int totalUsers;
-  final int activeUsers;
   final int newUsersToday;
   final int pendingKYC;
-  final double todayVolume;
   final int todayTransactions;
+  final double todayVolume;
   final double goldInventory;
-  final double currentGoldPrice;
   final List<double> priceHistory;
   final List<double> weeklyVolume;
-  final List<RecentActivity> recentActivities;
+  final List<ActivityData> recentActivities;
   final List<SystemAlert> systemAlerts;
   final List<KYCUser> pendingKYCUsers;
 
   DashboardData({
     required this.totalUsers,
-    required this.activeUsers,
     required this.newUsersToday,
     required this.pendingKYC,
-    required this.todayVolume,
     required this.todayTransactions,
+    required this.todayVolume,
     required this.goldInventory,
-    required this.currentGoldPrice,
     required this.priceHistory,
     required this.weeklyVolume,
     required this.recentActivities,
@@ -139,68 +31,150 @@ class DashboardData {
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     return DashboardData(
-      totalUsers: json['totalUsers'],
-      activeUsers: json['activeUsers'],
-      newUsersToday: json['newUsersToday'],
-      pendingKYC: json['pendingKYC'],
-      todayVolume: json['todayVolume'].toDouble(),
-      todayTransactions: json['todayTransactions'],
-      goldInventory: json['goldInventory'].toDouble(),
-      currentGoldPrice: json['currentGoldPrice'].toDouble(),
-      priceHistory: List<double>.from(json['priceHistory']),
-      weeklyVolume: List<double>.from(json['weeklyVolume']),
-      recentActivities: (json['recentActivities'] as List)
-          .map((a) => RecentActivity.fromJson(a))
+      totalUsers: json['totalUsers'] ?? 0,
+      newUsersToday: json['newUsersToday'] ?? 0,
+      pendingKYC: json['pendingKYC'] ?? 0,
+      todayTransactions: json['todayTransactions'] ?? 0,
+      todayVolume: (json['todayVolume'] ?? 0.0).toDouble(),
+      goldInventory: (json['goldInventory'] ?? 0.0).toDouble(),
+      priceHistory: List<double>.from(json['priceHistory'] ?? []),
+      weeklyVolume: List<double>.from(json['weeklyVolume'] ?? []),
+      recentActivities: (json['recentActivities'] as List? ?? [])
+          .map((e) => ActivityData.fromJson(e))
           .toList(),
-      systemAlerts: (json['systemAlerts'] as List)
-          .map((a) => SystemAlert.fromJson(a))
+      systemAlerts: (json['systemAlerts'] as List? ?? [])
+          .map((e) => SystemAlert.fromJson(e))
           .toList(),
-      pendingKYCUsers: (json['pendingKYCUsers'] as List)
-          .map((u) => KYCUser.fromJson(u))
+      pendingKYCUsers: (json['pendingKYCUsers'] as List? ?? [])
+          .map((e) => KYCUser.fromJson(e))
           .toList(),
+    );
+  }
+
+  // Factory method to create mock data
+  factory DashboardData.mock() {
+    return DashboardData(
+      totalUsers: 1250,
+      newUsersToday: 15,
+      pendingKYC: 8,
+      todayTransactions: 127,
+      todayVolume: 5240.75,
+      goldInventory: 890.25,
+      priceHistory: [470.0, 471.5, 473.0, 475.5, 474.0, 476.0, 475.5],
+      weeklyVolume: [12000, 15000, 18000, 14000, 16000, 20000, 17000],
+      recentActivities: [
+        ActivityData(
+          id: '1',
+          type: ActivityType.goldPurchase,
+          description: 'User purchased 2.5g gold',
+          user: 'user123@email.com',
+          timestamp: DateTime.now().subtract(Duration(minutes: 15)),
+        ),
+        ActivityData(
+          id: '2',
+          type: ActivityType.kycSubmission,
+          description: 'KYC application submitted',
+          user: 'newuser@email.com',
+          timestamp: DateTime.now().subtract(Duration(hours: 1)),
+        ),
+        ActivityData(
+          id: '3',
+          type: ActivityType.goldSale,
+          description: 'User sold 1.0g gold',
+          user: 'user456@email.com',
+          timestamp: DateTime.now().subtract(Duration(hours: 2)),
+        ),
+        ActivityData(
+          id: '4',
+          type: ActivityType.systemAlert,
+          description: 'Gold price updated',
+          user: 'system',
+          timestamp: DateTime.now().subtract(Duration(hours: 3)),
+        ),
+        ActivityData(
+          id: '5',
+          type: ActivityType.userRegistration,
+          description: 'New user registered',
+          user: 'newbie@email.com',
+          timestamp: DateTime.now().subtract(Duration(hours: 4)),
+        ),
+      ],
+      systemAlerts: [
+        SystemAlert(
+          id: 'alert_1',
+          title: 'Low Gold Inventory',
+          message: 'Gold inventory is below 100g threshold',
+          severity: AlertSeverity.high,
+          timestamp: DateTime.now().subtract(Duration(minutes: 30)),
+        ),
+      ],
+      pendingKYCUsers: [
+        KYCUser(
+          id: 'kyc_1',
+          name: 'John Doe',
+          email: 'john.doe@email.com',
+          submittedAt: DateTime.now().subtract(Duration(days: 1)),
+          documents: ['ic_front.jpg', 'ic_back.jpg', 'selfie.jpg'],
+        ),
+        KYCUser(
+          id: 'kyc_2',
+          name: 'Jane Smith',
+          email: 'jane.smith@email.com',
+          submittedAt: DateTime.now().subtract(Duration(days: 2)),
+          documents: ['ic_front.jpg', 'ic_back.jpg', 'selfie.jpg'],
+        ),
+      ],
     );
   }
 }
 
-class RecentActivity {
+// Activity Data Model
+class ActivityData {
   final String id;
   final ActivityType type;
   final String description;
   final String user;
   final DateTime timestamp;
-  final Map<String, dynamic>? metadata;
 
-  RecentActivity({
+  ActivityData({
     required this.id,
     required this.type,
     required this.description,
     required this.user,
     required this.timestamp,
-    this.metadata,
   });
 
-  factory RecentActivity.fromJson(Map<String, dynamic> json) {
-    return RecentActivity(
-      id: json['id'],
+  factory ActivityData.fromJson(Map<String, dynamic> json) {
+    return ActivityData(
+      id: json['id'] ?? '',
       type: ActivityType.values.firstWhere(
         (e) => e.toString() == 'ActivityType.${json['type']}',
+        orElse: () => ActivityType.userRegistration,
       ),
-      description: json['description'],
-      user: json['user'],
-      timestamp: DateTime.parse(json['timestamp']),
-      metadata: json['metadata'],
+      description: json['description'] ?? '',
+      user: json['user'] ?? '',
+      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type.toString().split('.').last,
+      'description': description,
+      'user': user,
+      'timestamp': timestamp.toIso8601String(),
+    };
   }
 }
 
+// System Alert Model
 class SystemAlert {
   final String id;
   final String title;
   final String message;
   final AlertSeverity severity;
   final DateTime timestamp;
-  final bool isRead;
-  final String? actionUrl;
 
   SystemAlert({
     required this.id,
@@ -208,256 +182,216 @@ class SystemAlert {
     required this.message,
     required this.severity,
     required this.timestamp,
-    this.isRead = false,
-    this.actionUrl,
   });
 
   factory SystemAlert.fromJson(Map<String, dynamic> json) {
     return SystemAlert(
-      id: json['id'],
-      title: json['title'],
-      message: json['message'],
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
       severity: AlertSeverity.values.firstWhere(
         (e) => e.toString() == 'AlertSeverity.${json['severity']}',
+        orElse: () => AlertSeverity.low,
       ),
-      timestamp: DateTime.parse(json['timestamp']),
-      isRead: json['isRead'] ?? false,
-      actionUrl: json['actionUrl'],
-    );
-  }
-}
-
-class KYCUser {
-  final String id;
-  final String name;
-  final String email;
-  final String phone;
-  final KYCStatus status;
-  final DateTime submittedAt;
-  final KYCDocuments documents;
-  final String? rejectionReason;
-  final DateTime? reviewedAt;
-  final String? reviewedBy;
-
-  KYCUser({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.status,
-    required this.submittedAt,
-    required this.documents,
-    this.rejectionReason,
-    this.reviewedAt,
-    this.reviewedBy,
-  });
-
-  factory KYCUser.fromJson(Map<String, dynamic> json) {
-    return KYCUser(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phone: json['phone'],
-      status: KYCStatus.values.firstWhere(
-        (e) => e.toString() == 'KYCStatus.${json['status']}',
-      ),
-      submittedAt: DateTime.parse(json['submittedAt']),
-      documents: KYCDocuments.fromJson(json['documents']),
-      rejectionReason: json['rejectionReason'],
-      reviewedAt: json['reviewedAt'] != null 
-          ? DateTime.parse(json['reviewedAt']) 
-          : null,
-      reviewedBy: json['reviewedBy'],
-    );
-  }
-}
-
-class KYCDocuments {
-  final String? icFront;
-  final String? icBack;
-  final String? passport;
-  final String? proofOfAddress;
-  final String? bankStatement;
-
-  KYCDocuments({
-    this.icFront,
-    this.icBack,
-    this.passport,
-    this.proofOfAddress,
-    this.bankStatement,
-  });
-
-  factory KYCDocuments.fromJson(Map<String, dynamic> json) {
-    return KYCDocuments(
-      icFront: json['icFront'],
-      icBack: json['icBack'],
-      passport: json['passport'],
-      proofOfAddress: json['proofOfAddress'],
-      bankStatement: json['bankStatement'],
+      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'icFront': icFront,
-      'icBack': icBack,
-      'passport': passport,
-      'proofOfAddress': proofOfAddress,
-      'bankStatement': bankStatement,
+      'id': id,
+      'title': title,
+      'message': message,
+      'severity': severity.toString().split('.').last,
+      'timestamp': timestamp.toIso8601String(),
     };
   }
 }
 
-class UserProfile {
+// KYC User Model
+class KYCUser {
+  final String id;
+  final String name;
+  final String email;
+  final DateTime submittedAt;
+  final List<String> documents;
+  final String? status;
+
+  KYCUser({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.submittedAt,
+    required this.documents,
+    this.status,
+  });
+
+  factory KYCUser.fromJson(Map<String, dynamic> json) {
+    return KYCUser(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      submittedAt: DateTime.tryParse(json['submittedAt'] ?? '') ?? DateTime.now(),
+      documents: List<String>.from(json['documents'] ?? []),
+      status: json['status'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'submittedAt': submittedAt.toIso8601String(),
+      'documents': documents,
+      'status': status,
+    };
+  }
+}
+
+// Transaction Data Model
+class TransactionData {
+  final String id;
+  final String userId;
+  final String type;
+  final double amount;
+  final double price;
+  final double total;
+  final String status;
+  final DateTime timestamp;
+  final String paymentMethod;
+
+  TransactionData({
+    required this.id,
+    required this.userId,
+    required this.type,
+    required this.amount,
+    required this.price,
+    required this.total,
+    required this.status,
+    required this.timestamp,
+    required this.paymentMethod,
+  });
+
+  factory TransactionData.fromJson(Map<String, dynamic> json) {
+    return TransactionData(
+      id: json['id'] ?? '',
+      userId: json['userId'] ?? '',
+      type: json['type'] ?? '',
+      amount: (json['amount'] ?? 0.0).toDouble(),
+      price: (json['price'] ?? 0.0).toDouble(),
+      total: (json['total'] ?? 0.0).toDouble(),
+      status: json['status'] ?? '',
+      timestamp: json['timestamp'] is DateTime 
+          ? json['timestamp'] 
+          : DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
+      paymentMethod: json['paymentMethod'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'type': type,
+      'amount': amount,
+      'price': price,
+      'total': total,
+      'status': status,
+      'timestamp': timestamp.toIso8601String(),
+      'paymentMethod': paymentMethod,
+    };
+  }
+}
+
+// User Model
+class UserData {
   final String id;
   final String email;
   final String name;
-  final String phone;
-  final String? address;
-  final String? bankAccount;
-  final UserStatus status;
-  final KYCStatus kycStatus;
-  final DateTime registeredAt;
-  final DateTime lastLogin;
-  final double goldBalance;
-  final double portfolioValue;
+  final String kycStatus;
+  final double goldHoldings;
   final int totalTransactions;
+  final DateTime joinDate;
+  final DateTime lastActive;
+  final String status;
 
-  UserProfile({
+  UserData({
     required this.id,
     required this.email,
     required this.name,
-    required this.phone,
-    this.address,
-    this.bankAccount,
-    required this.status,
     required this.kycStatus,
-    required this.registeredAt,
-    required this.lastLogin,
-    required this.goldBalance,
-    required this.portfolioValue,
+    required this.goldHoldings,
     required this.totalTransactions,
+    required this.joinDate,
+    required this.lastActive,
+    required this.status,
   });
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      id: json['id'],
-      email: json['email'],
-      name: json['name'],
-      phone: json['phone'],
-      address: json['address'],
-      bankAccount: json['bankAccount'],
-      status: UserStatus.values.firstWhere(
-        (e) => e.toString() == 'UserStatus.${json['status']}',
-      ),
-      kycStatus: KYCStatus.values.firstWhere(
-        (e) => e.toString() == 'KYCStatus.${json['kycStatus']}',
-      ),
-      registeredAt: DateTime.parse(json['registeredAt']),
-      lastLogin: DateTime.parse(json['lastLogin']),
-      goldBalance: json['goldBalance'].toDouble(),
-      portfolioValue: json['portfolioValue'].toDouble(),
-      totalTransactions: json['totalTransactions'],
+  factory UserData.fromJson(Map<String, dynamic> json) {
+    return UserData(
+      id: json['id'] ?? '',
+      email: json['email'] ?? '',
+      name: json['name'] ?? '',
+      kycStatus: json['kycStatus'] ?? '',
+      goldHoldings: (json['goldHoldings'] ?? 0.0).toDouble(),
+      totalTransactions: json['totalTransactions'] ?? 0,
+      joinDate: DateTime.tryParse(json['joinDate'] ?? '') ?? DateTime.now(),
+      lastActive: DateTime.tryParse(json['lastActive'] ?? '') ?? DateTime.now(),
+      status: json['status'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'name': name,
+      'kycStatus': kycStatus,
+      'goldHoldings': goldHoldings,
+      'totalTransactions': totalTransactions,
+      'joinDate': joinDate.toIso8601String(),
+      'lastActive': lastActive.toIso8601String(),
+      'status': status,
+    };
   }
 }
 
-class GoldInventory {
-  final String id;
-  final double totalGold;
-  final double reservedGold;
-  final double availableGold;
-  final double lowStockThreshold;
-  final DateTime lastUpdated;
-  final List<InventoryTransaction> recentTransactions;
-
-  GoldInventory({
-    required this.id,
-    required this.totalGold,
-    required this.reservedGold,
-    required this.availableGold,
-    required this.lowStockThreshold,
-    required this.lastUpdated,
-    required this.recentTransactions,
-  });
-
-  bool get isLowStock => availableGold <= lowStockThreshold;
-
-  factory GoldInventory.fromJson(Map<String, dynamic> json) {
-    return GoldInventory(
-      id: json['id'],
-      totalGold: json['totalGold'].toDouble(),
-      reservedGold: json['reservedGold'].toDouble(),
-      availableGold: json['availableGold'].toDouble(),
-      lowStockThreshold: json['lowStockThreshold'].toDouble(),
-      lastUpdated: DateTime.parse(json['lastUpdated']),
-      recentTransactions: (json['recentTransactions'] as List)
-          .map((t) => InventoryTransaction.fromJson(t))
-          .toList(),
-    );
-  }
+// Enums
+enum ActivityType {
+  userRegistration,
+  goldPurchase,
+  goldSale,
+  kycSubmission,
+  systemAlert,
+  priceUpdate,
+  inventoryUpdate,
 }
 
-class InventoryTransaction {
-  final String id;
-  final String type; // 'purchase', 'sale', 'adjustment'
-  final double amount;
-  final double pricePerGram;
-  final DateTime timestamp;
-  final String description;
-  final String performedBy;
-
-  InventoryTransaction({
-    required this.id,
-    required this.type,
-    required this.amount,
-    required this.pricePerGram,
-    required this.timestamp,
-    required this.description,
-    required this.performedBy,
-  });
-
-  factory InventoryTransaction.fromJson(Map<String, dynamic> json) {
-    return InventoryTransaction(
-      id: json['id'],
-      type: json['type'],
-      amount: json['amount'].toDouble(),
-      pricePerGram: json['pricePerGram'].toDouble(),
-      timestamp: DateTime.parse(json['timestamp']),
-      description: json['description'],
-      performedBy: json['performedBy'],
-    );
-  }
+enum AlertSeverity {
+  low,
+  medium,
+  high,
+  critical,
 }
 
-class PriceManagement {
-  final double basePrice;
-  final double buySpread;
-  final double sellSpread;
-  final DateTime lastUpdated;
-  final String updatedBy;
-  final bool isManualOverride;
+enum KYCStatus {
+  pending,
+  approved,
+  rejected,
+  underReview,
+}
 
-  PriceManagement({
-    required this.basePrice,
-    required this.buySpread,
-    required this.sellSpread,
-    required this.lastUpdated,
-    required this.updatedBy,
-    this.isManualOverride = false,
-  });
+enum TransactionStatus {
+  pending,
+  completed,
+  failed,
+  cancelled,
+}
 
-  double get buyPrice => basePrice * (1 + buySpread);
-  double get sellPrice => basePrice * (1 - sellSpread);
-
-  factory PriceManagement.fromJson(Map<String, dynamic> json) {
-    return PriceManagement(
-      basePrice: json['basePrice'].toDouble(),
-      buySpread: json['buySpread'].toDouble(),
-      sellSpread: json['sellSpread'].toDouble(),
-      lastUpdated: DateTime.parse(json['lastUpdated']),
-      updatedBy: json['updatedBy'],
-      isManualOverride: json['isManualOverride'] ?? false,
-    );
-  }
+enum UserStatus {
+  active,
+  inactive,
+  blocked,
+  suspended,
 }
