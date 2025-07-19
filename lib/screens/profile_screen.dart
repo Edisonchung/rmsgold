@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -102,27 +101,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: user.kycApproved ? Colors.green.shade100 : Colors.orange.shade100,
+                color: user.isKYCVerified ? Colors.green.shade100 : Colors.orange.shade100,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: user.kycApproved ? Colors.green.shade300 : Colors.orange.shade300,
+                  color: user.isKYCVerified ? Colors.green.shade300 : Colors.orange.shade300,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    user.kycApproved ? Icons.verified : Icons.pending,
+                    user.isKYCVerified ? Icons.verified : Icons.pending,
                     size: 16,
-                    color: user.kycApproved ? Colors.green.shade700 : Colors.orange.shade700,
+                    color: user.isKYCVerified ? Colors.green.shade700 : Colors.orange.shade700,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    user.kycApproved ? 'KYC Verified' : 'KYC Pending',
+                    user.isKYCVerified ? 'KYC Verified' : 'KYC Pending',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: user.kycApproved ? Colors.green.shade700 : Colors.orange.shade700,
+                      color: user.isKYCVerified ? Colors.green.shade700 : Colors.orange.shade700,
                     ),
                   ),
                 ],
@@ -137,7 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildAccountSection(User user) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -149,38 +148,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildInfoTile(
-              icon: Icons.person,
-              title: 'Full Name',
-              subtitle: user.name,
-              onTap: () => _editProfile('name'),
-            ),
-            _buildInfoTile(
-              icon: Icons.email,
-              title: 'Email Address',
-              subtitle: user.email,
-              onTap: () => _editProfile('email'),
-            ),
-            _buildInfoTile(
-              icon: Icons.phone,
-              title: 'Phone Number',
-              subtitle: user.phone,
-              onTap: () => _editProfile('phone'),
-            ),
-            _buildInfoTile(
-              icon: Icons.calendar_today,
-              title: 'Member Since',
-              subtitle: '${user.joinDate.day}/${user.joinDate.month}/${user.joinDate.year}',
-              showTrailing: false,
-            ),
-            if (!user.kycApproved)
-              _buildInfoTile(
-                icon: Icons.upload_file,
-                title: 'Complete KYC Verification',
-                subtitle: 'Upload your documents to start trading',
-                onTap: () => _completeKYC(),
-                titleColor: Colors.orange.shade700,
-              ),
+            _buildInfoRow('Full Name', user.name),
+            _buildInfoRow('Email Address', user.email),
+            _buildInfoRow('Phone Number', user.phoneNumber ?? 'Not provided'),
+            _buildInfoRow('Account ID', user.id),
+            _buildInfoRow('Member Since', _formatDate(user.createdAt)),
           ],
         ),
       ),
@@ -190,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSecuritySection() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -202,39 +174,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildInfoTile(
-              icon: Icons.lock,
-              title: 'Change Password',
-              subtitle: 'Update your account password',
-              onTap: () => _changePassword(),
+            _buildSwitchRow(
+              'Multi-Factor Authentication',
+              'Add an extra layer of security',
+              _mfaEnabled,
+              (value) => setState(() => _mfaEnabled = value),
             ),
-            _buildSwitchTile(
-              icon: Icons.fingerprint,
-              title: 'Biometric Login',
-              subtitle: 'Use fingerprint or face recognition',
-              value: _biometricEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _biometricEnabled = value;
-                });
+            _buildSwitchRow(
+              'Biometric Login',
+              'Use fingerprint or face ID',
+              _biometricEnabled,
+              (value) => setState(() => _biometricEnabled = value),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.key),
+              title: const Text('Change Password'),
+              subtitle: const Text('Update your account password'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Change password feature coming soon')),
+                );
               },
-            ),
-            _buildSwitchTile(
-              icon: Icons.security,
-              title: 'Two-Factor Authentication',
-              subtitle: 'Add an extra layer of security',
-              value: _mfaEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _mfaEnabled = value;
-                });
-              },
-            ),
-            _buildInfoTile(
-              icon: Icons.account_balance,
-              title: 'Bank Account',
-              subtitle: 'Manage linked bank accounts',
-              onTap: () => _manageBankAccounts(),
             ),
           ],
         ),
@@ -245,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildPreferencesSection() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -257,34 +220,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildSwitchTile(
-              icon: Icons.notifications,
-              title: 'Push Notifications',
-              subtitle: 'Receive price alerts and updates',
-              value: _notificationsEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _notificationsEnabled = value;
-                });
+            _buildSwitchRow(
+              'Push Notifications',
+              'Receive price alerts and updates',
+              _notificationsEnabled,
+              (value) => setState(() => _notificationsEnabled = value),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.language),
+              title: const Text('Language'),
+              subtitle: const Text('English (Malaysia)'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Language settings coming soon')),
+                );
               },
             ),
-            _buildInfoTile(
-              icon: Icons.price_change,
-              title: 'Price Alerts',
-              subtitle: 'Set custom gold price alerts',
-              onTap: () => _managePriceAlerts(),
-            ),
-            _buildInfoTile(
-              icon: Icons.language,
-              title: 'Language',
-              subtitle: 'English (Malaysia)',
-              onTap: () => _changeLanguage(),
-            ),
-            _buildInfoTile(
-              icon: Icons.download,
-              title: 'Download Statements',
-              subtitle: 'Get your trading statements',
-              onTap: () => _downloadStatements(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.currency_exchange),
+              title: const Text('Currency'),
+              subtitle: const Text('Malaysian Ringgit (RM)'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Currency settings coming soon')),
+                );
+              },
             ),
           ],
         ),
@@ -295,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSupportSection() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -307,90 +272,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildInfoTile(
-              icon: Icons.help_center,
-              title: 'Help Center',
-              subtitle: 'FAQs and user guides',
-              onTap: () => _openHelpCenter(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Help Center'),
+              subtitle: const Text('FAQs and tutorials'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Help center coming soon')),
+                );
+              },
             ),
-            _buildInfoTile(
-              icon: Icons.chat,
-              title: 'Live Chat Support',
-              subtitle: '24/7 customer support',
-              onTap: () => _startLiveChat(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.chat),
+              title: const Text('Contact Support'),
+              subtitle: const Text('Get help from our team'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Support chat coming soon')),
+                );
+              },
             ),
-            _buildInfoTile(
-              icon: Icons.phone,
-              title: 'Call Support',
-              subtitle: '+60 3-1234 5678',
-              onTap: () => _callSupport(),
-            ),
-            _buildInfoTile(
-              icon: Icons.feedback,
-              title: 'Send Feedback',
-              subtitle: 'Help us improve our service',
-              onTap: () => _sendFeedback(),
-            ),
-            _buildInfoTile(
-              icon: Icons.info,
-              title: 'About RMS Gold',
-              subtitle: 'Version 1.0.0',
-              onTap: () => _showAbout(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description),
+              title: const Text('Terms & Privacy'),
+              subtitle: const Text('Legal documents'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Legal documents coming soon')),
+                );
+              },
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    VoidCallback? onTap,
-    bool showTrailing = true,
-    Color? titleColor,
-  }) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.amber.shade100,
-        child: Icon(icon, color: Colors.amber.shade700),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w500,
-          color: titleColor,
-        ),
-      ),
-      subtitle: Text(subtitle),
-      trailing: showTrailing && onTap != null 
-        ? const Icon(Icons.chevron_right)
-        : null,
-      onTap: onTap,
-    );
-  }
-
-  Widget _buildSwitchTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.amber.shade100,
-        child: Icon(icon, color: Colors.amber.shade700),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Text(subtitle),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
       ),
     );
   }
@@ -399,161 +318,97 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () => _confirmLogout(auth),
+        onPressed: () async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Logout'),
+              content: const Text('Are you sure you want to logout?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Logout'),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmed == true) {
+            await auth.signOut();
+            if (mounted) {
+              Navigator.pushReplacementNamed(context, '/');
+            }
+          }
+        },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade600,
+          backgroundColor: Colors.red,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
         child: const Text(
           'Logout',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 
-  void _editProfile(String field) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Edit $field - Feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _completeKYC() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('KYC verification - Feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _changePassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Change password feature - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _manageBankAccounts() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Bank account management - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _managePriceAlerts() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Price alerts feature - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _changeLanguage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Language settings - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _downloadStatements() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Statement download - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _openHelpCenter() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Help center - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _startLiveChat() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Live chat support - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _callSupport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Calling support: +60 3-1234 5678'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _sendFeedback() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Feedback form - Coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _showAbout() {
-    showAboutDialog(
-      context: context,
-      applicationName: 'RMS Gold Account-i',
-      applicationVersion: '1.0.0',
-      applicationLegalese: '© 2025 RMS Gold. All rights reserved.',
-      children: [
-        const SizedBox(height: 16),
-        const Text(
-          'RMS Gold Account-i is a digital gold trading platform that enables you to buy, sell, and manage gold investments securely.',
-        ),
-      ],
-    );
-  }
-
-  void _confirmLogout(AuthProvider auth) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              auth.signOut();
-              Navigator.pushReplacementNamed(context, '/');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            child: const Text('Logout', style: TextStyle(color: Colors.white)),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildSwitchRow(
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title),
+      subtitle: Text(subtitle),
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
