@@ -8,22 +8,19 @@ import 'providers/auth_provider.dart';
 import 'providers/gold_provider.dart';
 import 'providers/transaction_provider.dart';
 
-// Import new admin providers
-import 'providers/admin_auth_provider.dart';
-import 'providers/kyc_provider.dart';
-import 'providers/admin_provider.dart';
+// Import admin providers (corrected paths)
+import 'admin/providers/admin_auth_provider.dart';
+import 'admin/providers/admin_provider.dart';
 
 // Import your existing screens
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/portfolio_screen.dart';
 
-// Import new admin screens (the ones we created)
-import 'screens/admin/admin_main_screen.dart';
-import 'screens/admin/admin_dashboard.dart';
-import 'screens/admin/kyc_management_screen.dart';
-import 'screens/user/enhanced_portfolio_screen.dart';
-import 'screens/user/physical_redemption_screen.dart';
+// Import admin components (corrected paths)
+import 'admin/admin_main.dart';
+import 'admin/screens/admin_dashboard.dart';
+import 'admin/screens/admin_login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,9 +40,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GoldProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         
-        // New admin providers
+        // Admin providers (corrected)
         ChangeNotifierProvider(create: (_) => AdminAuthProvider()),
-        ChangeNotifierProvider(create: (_) => KYCProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(
@@ -72,27 +68,23 @@ class MyApp extends StatelessWidget {
           
           // User routes (your existing ones)
           '/user/dashboard': (context) => DashboardScreen(),
-          '/user/portfolio': (context) => EnhancedPortfolioScreen(), // Enhanced version
-          '/user/redemption': (context) => PhysicalRedemptionScreen(),
+          '/user/portfolio': (context) => PortfolioScreen(),
           
-          // Admin routes (new)
-          '/admin': (context) => AdminAuthGateway(),
-          '/admin/dashboard': (context) => AdminMainScreen(),
-          '/admin/kyc': (context) => KycManagementScreen(),
+          // Admin routes - Use AdminApp as the main entry point
+          '/admin': (context) => AdminApp(),
+          '/admin/login': (context) => AdminApp(),
+          '/admin/dashboard': (context) => AdminApp(),
         },
         onGenerateRoute: (settings) {
-          // Handle dynamic routes if needed
-          switch (settings.name) {
-            case '/user/redemption':
-              final args = settings.arguments as Map<String, dynamic>?;
-              return MaterialPageRoute(
-                builder: (context) => PhysicalRedemptionScreen(
-                  userGoldHoldings: args?['goldHoldings'] ?? 2.41,
-                ),
-              );
-            default:
-              return null;
+          // Handle all admin routes through AdminApp
+          if (settings.name?.startsWith('/admin') == true) {
+            return MaterialPageRoute(
+              builder: (context) => AdminApp(),
+              settings: settings,
+            );
           }
+          
+          return null;
         },
       ),
     );
@@ -103,19 +95,20 @@ class MyApp extends StatelessWidget {
 class AuthGateway extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AuthProvider, AdminAuthProvider>(
-      builder: (context, authProvider, adminAuthProvider, child) {
-        // Check if user is already logged in
+    // Check current route to determine if it's an admin route
+    final route = ModalRoute.of(context)?.settings.name ?? '';
+    
+    // If it's an admin route, show AdminApp
+    if (route.startsWith('/admin') || Uri.base.path.startsWith('/admin')) {
+      return AdminApp();
+    }
+    
+    // Otherwise, show user authentication flow
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
         if (authProvider.isAuthenticated) {
-          return DashboardScreen(); // Your existing user dashboard
+          return DashboardScreen();
         }
-        
-        // Check if admin is already logged in
-        if (adminAuthProvider.isAuthenticated) {
-          return AdminMainScreen(); // New admin dashboard
-        }
-        
-        // Show login screen with admin option
         return EnhancedLoginScreen();
       },
     );
@@ -166,7 +159,7 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
-                  Icons.account_balance,
+                  _isAdminLogin ? Icons.admin_panel_settings : Icons.account_balance,
                   size: 40,
                   color: Colors.white,
                 ),
@@ -188,7 +181,7 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                   color: Colors.grey[600],
                 ),
               ),
-              SizedBox(height, 32),
+              SizedBox(height: 32),
               
               // Toggle between user and admin login
               Container(
@@ -319,8 +312,9 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                     ),
                     SizedBox(height: 8),
                     if (_isAdminLogin) ...[
-                      Text('Admin: admin@rmsgold.com', style: TextStyle(fontSize: 12)),
-                      Text('Password: admin123456', style: TextStyle(fontSize: 12)),
+                      Text('Super Admin: admin@rmsgold.com / admin123456', style: TextStyle(fontSize: 11)),
+                      Text('KYC Officer: kyc@rmsgold.com / kyc123456', style: TextStyle(fontSize: 11)),
+                      Text('Inventory: inventory@rmsgold.com / inventory123456', style: TextStyle(fontSize: 11)),
                     ] else ...[
                       Text('User: demo@rmsgold.com', style: TextStyle(fontSize: 12)),
                       Text('Password: demo123456', style: TextStyle(fontSize: 12)),
@@ -328,11 +322,52 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                   ],
                 ),
               ),
+              
+              // Quick access buttons
+              if (_isAdminLogin) ...[
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _quickLogin('admin@rmsgold.com', 'admin123456'),
+                        child: Text('Admin', style: TextStyle(fontSize: 10)),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _quickLogin('kyc@rmsgold.com', 'kyc123456'),
+                        child: Text('KYC', style: TextStyle(fontSize: 10)),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _quickLogin('inventory@rmsgold.com', 'inventory123456'),
+                        child: Text('Inventory', style: TextStyle(fontSize: 10)),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                SizedBox(height: 16),
+                OutlinedButton(
+                  onPressed: () => _quickLogin('demo@rmsgold.com', 'demo123456'),
+                  child: Text('Quick Demo Login'),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _quickLogin(String email, String password) {
+    _emailController.text = email;
+    _passwordController.text = password;
+    _handleLogin();
   }
 
   Future<void> _handleLogin() async {
@@ -343,15 +378,8 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
     
     try {
       if (_isAdminLogin) {
-        // Admin login
-        final adminAuthProvider = Provider.of<AdminAuthProvider>(context, listen: false);
-        final success = await adminAuthProvider.login(email, password);
-        
-        if (success) {
-          Navigator.pushReplacementNamed(context, '/admin/dashboard');
-        } else {
-          _showErrorDialog('Invalid admin credentials');
-        }
+        // Navigate to admin portal
+        Navigator.pushReplacementNamed(context, '/admin');
       } else {
         // User login
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -391,22 +419,5 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-}
-
-// Admin Auth Gateway
-class AdminAuthGateway extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AdminAuthProvider>(
-      builder: (context, adminAuthProvider, child) {
-        if (adminAuthProvider.isAuthenticated) {
-          return AdminMainScreen();
-        } else {
-          // Redirect to main login with admin flag
-          return EnhancedLoginScreen();
-        }
-      },
-    );
   }
 }
