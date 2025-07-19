@@ -1,16 +1,60 @@
 // lib/providers/auth_provider.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+
+// Create a simple User model to avoid conflict with Firebase User
+class User {
+  final String id;
+  final String email;
+  final String name;
+  final String? phoneNumber;
+  final bool isKYCVerified;
+  final DateTime createdAt;
+
+  User({
+    required this.id,
+    required this.email,
+    required this.name,
+    this.phoneNumber,
+    this.isKYCVerified = false,
+    required this.createdAt,
+  });
+
+  factory User.fromFirebaseUser(firebase_auth.User firebaseUser) {
+    return User(
+      id: firebaseUser.uid,
+      email: firebaseUser.email ?? '',
+      name: firebaseUser.displayName ?? 'User',
+      phoneNumber: firebaseUser.phoneNumber,
+      isKYCVerified: true, // Demo default
+      createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+    );
+  }
+
+  factory User.demo() {
+    return User(
+      id: 'demo_user_id',
+      email: 'demo@rmsgold.com',
+      name: 'Demo User',
+      phoneNumber: '+60123456789',
+      isKYCVerified: true,
+      createdAt: DateTime.now().subtract(Duration(days: 30)),
+    );
+  }
+}
 
 class AuthProvider with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  User? _user;
+  final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
+  firebase_auth.User? _firebaseUser;
+  User? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
   bool _firebaseAvailable;
 
-  User? get user => _user;
-  bool get isAuthenticated => _user != null;
+  // Fixed getter - this was missing!
+  User? get currentUser => _currentUser;
+  firebase_auth.User? get user => _firebaseUser; // Keep existing for compatibility
+  bool get isAuthenticated => _currentUser != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -18,8 +62,13 @@ class AuthProvider with ChangeNotifier {
     // Listen to auth state changes only if Firebase is available
     if (_firebaseAvailable) {
       try {
-        _auth.authStateChanges().listen((User? user) {
-          _user = user;
+        _auth.authStateChanges().listen((firebase_auth.User? user) {
+          _firebaseUser = user;
+          if (user != null) {
+            _currentUser = User.fromFirebaseUser(user);
+          } else {
+            _currentUser = null;
+          }
           notifyListeners();
         });
       } catch (e) {
@@ -39,6 +88,7 @@ class AuthProvider with ChangeNotifier {
       if (email == 'demo@rmsgold.com' && password == 'demo123456') {
         // Simulate demo login
         await Future.delayed(Duration(seconds: 1));
+        _currentUser = User.demo();
         _isLoading = false;
         notifyListeners();
         return true;
@@ -52,11 +102,14 @@ class AuthProvider with ChangeNotifier {
             password: password,
           );
           
-          _user = credential.user;
+          _firebaseUser = credential.user;
+          if (credential.user != null) {
+            _currentUser = User.fromFirebaseUser(credential.user!);
+          }
           _isLoading = false;
           notifyListeners();
           return true;
-        } on FirebaseAuthException catch (e) {
+        } on firebase_auth.FirebaseAuthException catch (e) {
           // Handle Firebase errors
           switch (e.code) {
             case 'user-not-found':
@@ -105,7 +158,10 @@ class AuthProvider with ChangeNotifier {
         // Update display name
         await credential.user?.updateDisplayName(name);
         
-        _user = credential.user;
+        _firebaseUser = credential.user;
+        if (credential.user != null) {
+          _currentUser = User.fromFirebaseUser(credential.user!);
+        }
         _isLoading = false;
         notifyListeners();
         return true;
@@ -115,7 +171,7 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
         return false;
       }
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'weak-password':
           _errorMessage = 'Password is too weak.';
@@ -148,7 +204,8 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       print('Error signing out: $e');
     } finally {
-      _user = null;
+      _firebaseUser = null;
+      _currentUser = null;
       _errorMessage = null;
       notifyListeners();
     }
