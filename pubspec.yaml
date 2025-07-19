@@ -87,33 +87,35 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  assets:
-    - assets/images/
-    - assets/icons/
-    - assets/animations/
-    - assets/certificates/
+  # REMOVED problematic asset references that don't exist
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  #   - assets/animations/
+  #   - assets/certificates/
   
-  fonts:
-    - family: Roboto
-      fonts:
-        - asset: assets/fonts/Roboto-Regular.ttf
-        - asset: assets/fonts/Roboto-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Roboto-Medium.ttf
-          weight: 500
+  # REMOVED problematic font references that don't exist
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700
+  #       - asset: assets/fonts/Roboto-Medium.ttf
+  #         weight: 500
 
 # Build configuration for web deployment
-flutter_build_web:
-  web-renderer: html
-  tree-shake-icons: true
+# flutter_build_web:
+#   web-renderer: html
+#   tree-shake-icons: true
   
 # Platform-specific configurations
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/icons/app_icon.png"
-  min_sdk_android: 21
+# flutter_launcher_icons:
+#   android: "launcher_icon"
+#   ios: true
+#   image_path: "assets/icons/app_icon.png"
+#   min_sdk_android: 21
 
 # App metadata for stores
-flutter_app_name: "RMS Gold Account-i"
-flutter_app_description: "Digital Gold Trading Platform by Rakyat Management Services"
+# flutter_app_name: "RMS Gold Account-i"
+# flutter_app_description: "Digital Gold Trading Platform by Rakyat Management Services"
