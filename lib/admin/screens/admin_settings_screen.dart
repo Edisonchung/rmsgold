@@ -50,422 +50,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen>
     );
   }
 
-  Widget _buildRoleItem(String role, String description, Color color) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(role, style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(description, style: TextStyle(color: Colors.grey[600])),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackupTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildBackupStatusCard(),
-          SizedBox(height: 16),
-          _buildBackupScheduleCard(),
-          SizedBox(height: 16),
-          _buildDataExportCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackupStatusCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Backup Status',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            _buildBackupItem('Last Backup', '2025-07-20 02:00 AM', Colors.green, Icons.check_circle),
-            _buildBackupItem('Backup Size', '2.3 GB', Colors.blue, Icons.storage),
-            _buildBackupItem('Next Scheduled', '2025-07-21 02:00 AM', Colors.orange, Icons.schedule),
-            _buildBackupItem('Retention Period', '30 days', Colors.purple, Icons.history),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _runBackupNow,
-                    icon: Icon(Icons.backup),
-                    label: Text('Backup Now'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF1B4332),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _restoreBackup,
-                    icon: Icon(Icons.restore),
-                    label: Text('Restore'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBackupItem(String label, String value, Color color, IconData icon) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          SizedBox(width: 12),
-          Expanded(child: Text(label)),
-          Text(
-            value,
-            style: TextStyle(fontWeight: FontWeight.bold, color: color),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackupScheduleCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Backup Schedule',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            SwitchListTile(
-              title: Text('Automatic Backups'),
-              subtitle: Text('Enable scheduled backups'),
-              value: true,
-              onChanged: (value) {
-                // TODO: Implement auto backup toggle
-              },
-            ),
-            ListTile(
-              title: Text('Frequency'),
-              subtitle: Text('Daily at 2:00 AM'),
-              trailing: Icon(Icons.edit),
-              onTap: _editBackupSchedule,
-            ),
-            ListTile(
-              title: Text('Retention Policy'),
-              subtitle: Text('Keep backups for 30 days'),
-              trailing: Icon(Icons.edit),
-              onTap: _editRetentionPolicy,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDataExportCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Data Export',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Export specific data for analysis or migration',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildExportButton('User Data', Icons.people),
-                _buildExportButton('Transactions', Icons.swap_horiz),
-                _buildExportButton('KYC Records', Icons.verified_user),
-                _buildExportButton('Audit Logs', Icons.security),
-                _buildExportButton('System Config', Icons.settings),
-                _buildExportButton('Price History', Icons.trending_up),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExportButton(String label, IconData icon) {
-    return ElevatedButton.icon(
-      onPressed: () => _exportData(label),
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.grey[200],
-        foregroundColor: Colors.black87,
-      ),
-    );
-  }
-
-  // Event handlers
-  void _checkSystemHealth() {
-    context.read<AdminProvider>().checkSystemHealth();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('System health check completed')),
-    );
-  }
-
-  void _editSystemConfig() {
-    // TODO: Implement system configuration editing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('System configuration editor coming soon')),
-    );
-  }
-
-  void _enableMaintenanceMode() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Enable Maintenance Mode'),
-        content: Text('This will temporarily disable the app for all users. Continue?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Maintenance mode enabled')),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: Text('Enable'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _scheduleDowntime() {
-    // TODO: Implement downtime scheduling
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Downtime scheduling coming soon')),
-    );
-  }
-
-  void _changePassword() {
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('New passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    context.read<AdminAuthProvider>().changePassword(
-      _currentPasswordController.text,
-      _newPasswordController.text,
-    );
-
-    _currentPasswordController.clear();
-    _newPasswordController.clear();
-    _confirmPasswordController.clear();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Password changed successfully')),
-    );
-  }
-
-  void _manageIPWhitelist() {
-    // TODO: Implement IP whitelist management
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('IP whitelist management coming soon')),
-    );
-  }
-
-  void _viewFullAuditLog() {
-    // TODO: Navigate to full audit log screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Full audit log view coming soon')),
-    );
-  }
-
-  void _addAdminUser() {
-    // TODO: Implement add admin user dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Add admin user functionality coming soon')),
-    );
-  }
-
-  void _handleAdminAction(String action, Map<String, String> admin) {
-    switch (action) {
-      case 'edit':
-        // TODO: Implement edit admin
-        break;
-      case 'permissions':
-        // TODO: Implement permissions management
-        break;
-      case 'deactivate':
-        _deactivateAdmin(admin);
-        break;
-    }
-  }
-
-  void _deactivateAdmin(Map<String, String> admin) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Deactivate Admin'),
-        content: Text('Are you sure you want to deactivate ${admin['name']}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${admin['name']} deactivated')),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Deactivate'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _manageRoles() {
-    // TODO: Implement role management
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Role management coming soon')),
-    );
-  }
-
-  void _runBackupNow() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Run Backup Now'),
-        content: Text('This will create a full system backup. Continue?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Backup started successfully')),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF1B4332)),
-            child: Text('Start Backup'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _restoreBackup() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Restore from Backup'),
-        content: Text('WARNING: This will overwrite current data. Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Restore functionality coming soon')),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Restore'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _editBackupSchedule() {
-    // TODO: Implement backup schedule editing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Backup schedule editing coming soon')),
-    );
-  }
-
-  void _editRetentionPolicy() {
-    // TODO: Implement retention policy editing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Retention policy editing coming soon')),
-    );
-  }
-
-  void _exportData(String dataType) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Exporting $dataType...')),
-    );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-}
-
   Widget _buildSystemTab() {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16),
@@ -903,3 +487,412 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildRoleItem(String role, String description, Color color) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(role, style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(description, style: TextStyle(color: Colors.grey[600])),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackupTab() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildBackupStatusCard(),
+          SizedBox(height: 16),
+          _buildBackupScheduleCard(),
+          SizedBox(height: 16),
+          _buildDataExportCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackupStatusCard() {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Backup Status',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            _buildBackupItem('Last Backup', '2025-07-20 02:00 AM', Colors.green, Icons.check_circle),
+            _buildBackupItem('Backup Size', '2.3 GB', Colors.blue, Icons.storage),
+            _buildBackupItem('Next Scheduled', '2025-07-21 02:00 AM', Colors.orange, Icons.schedule),
+            _buildBackupItem('Retention Period', '30 days', Colors.purple, Icons.history),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _runBackupNow,
+                    icon: Icon(Icons.backup),
+                    label: Text('Backup Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF1B4332),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _restoreBackup,
+                    icon: Icon(Icons.restore),
+                    label: Text('Restore'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackupItem(String label, String value, Color color, IconData icon) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          SizedBox(width: 12),
+          Expanded(child: Text(label)),
+          Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackupScheduleCard() {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Backup Schedule',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            SwitchListTile(
+              title: Text('Automatic Backups'),
+              subtitle: Text('Enable scheduled backups'),
+              value: true,
+              onChanged: (value) {
+                // TODO: Implement auto backup toggle
+              },
+            ),
+            ListTile(
+              title: Text('Frequency'),
+              subtitle: Text('Daily at 2:00 AM'),
+              trailing: Icon(Icons.edit),
+              onTap: _editBackupSchedule,
+            ),
+            ListTile(
+              title: Text('Retention Policy'),
+              subtitle: Text('Keep backups for 30 days'),
+              trailing: Icon(Icons.edit),
+              onTap: _editRetentionPolicy,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataExportCard() {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Data Export',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Export specific data for analysis or migration',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildExportButton('User Data', Icons.people),
+                _buildExportButton('Transactions', Icons.swap_horiz),
+                _buildExportButton('KYC Records', Icons.verified_user),
+                _buildExportButton('Audit Logs', Icons.security),
+                _buildExportButton('System Config', Icons.settings),
+                _buildExportButton('Price History', Icons.trending_up),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportButton(String label, IconData icon) {
+    return ElevatedButton.icon(
+      onPressed: () => _exportData(label),
+      icon: Icon(icon, size: 16),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.grey[200],
+        foregroundColor: Colors.black87,
+      ),
+    );
+  }
+
+  // Event handlers
+  void _checkSystemHealth() {
+    context.read<AdminProvider>().checkSystemHealth();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('System health check completed')),
+    );
+  }
+
+  void _editSystemConfig() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('System configuration editor coming soon')),
+    );
+  }
+
+  void _enableMaintenanceMode() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Enable Maintenance Mode'),
+        content: Text('This will temporarily disable the app for all users. Continue?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Maintenance mode enabled')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: Text('Enable'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _scheduleDowntime() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Downtime scheduling coming soon')),
+    );
+  }
+
+  void _changePassword() {
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('New passwords do not match'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    context.read<AdminAuthProvider>().changePassword(
+      _currentPasswordController.text,
+      _newPasswordController.text,
+    );
+
+    _currentPasswordController.clear();
+    _newPasswordController.clear();
+    _confirmPasswordController.clear();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Password changed successfully')),
+    );
+  }
+
+  void _manageIPWhitelist() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('IP whitelist management coming soon')),
+    );
+  }
+
+  void _viewFullAuditLog() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Full audit log view coming soon')),
+    );
+  }
+
+  void _addAdminUser() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Add admin user functionality coming soon')),
+    );
+  }
+
+  void _handleAdminAction(String action, Map<String, String> admin) {
+    switch (action) {
+      case 'edit':
+        // TODO: Implement edit admin
+        break;
+      case 'permissions':
+        // TODO: Implement permissions management
+        break;
+      case 'deactivate':
+        _deactivateAdmin(admin);
+        break;
+    }
+  }
+
+  void _deactivateAdmin(Map<String, String> admin) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Deactivate Admin'),
+        content: Text('Are you sure you want to deactivate ${admin['name']}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${admin['name']} deactivated')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Deactivate'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _manageRoles() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Role management coming soon')),
+    );
+  }
+
+  void _runBackupNow() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Run Backup Now'),
+        content: Text('This will create a full system backup. Continue?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Backup started successfully')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF1B4332)),
+            child: Text('Start Backup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _restoreBackup() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Restore from Backup'),
+        content: Text('WARNING: This will overwrite current data. Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Restore functionality coming soon')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Restore'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editBackupSchedule() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Backup schedule editing coming soon')),
+    );
+  }
+
+  void _editRetentionPolicy() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Retention policy editing coming soon')),
+    );
+  }
+
+  void _exportData(String dataType) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Exporting $dataType...')),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+}
