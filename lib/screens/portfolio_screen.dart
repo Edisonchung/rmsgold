@@ -80,7 +80,8 @@ class PortfolioScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  'RM ${(2.5 * goldProvider.currentPriceValue).toStringAsFixed(2)}',
+                                  // FIXED: Changed from goldProvider.currentPrice to goldProvider.currentPriceValue
+                                  'RM ${(2.5 * (goldProvider.currentPrice?.buyPrice ?? 0.0)).toStringAsFixed(2)}',
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
@@ -105,7 +106,8 @@ class PortfolioScreen extends StatelessWidget {
                               Icon(Icons.trending_up, color: Colors.green[700], size: 20),
                               SizedBox(width: 8),
                               Text(
-                                'Profit: +RM ${((2.5 * goldProvider.currentPriceValue) - (2.5 * 470)).toStringAsFixed(2)}',
+                                // FIXED: Changed from goldProvider.currentPrice to goldProvider.currentPrice?.buyPrice ?? 0.0
+                                'Profit: +RM ${((2.5 * (goldProvider.currentPrice?.buyPrice ?? 0.0)) - (2.5 * 470)).toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: Colors.green[700],
                                   fontWeight: FontWeight.w600,
