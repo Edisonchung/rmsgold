@@ -41,7 +41,8 @@ class AdminProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _dashboardData = await _adminService.getDashboardData();
+      final data = await _adminService.getDashboardData();
+      _dashboardData = DashboardData.fromJson(data);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -54,21 +55,19 @@ class AdminProvider extends ChangeNotifier {
   Future<void> loadUsers({
     String? searchQuery,
     UserStatus? statusFilter,
-    KYCStatus? kycFilter,
+    KYCStatus? kycStatusFilter,
   }) async {
-    _isLoading = true;
-    notifyListeners();
-
     try {
-      _users = await _adminService.getUsers(
+      final usersData = await _adminService.getUsers(
         searchQuery: searchQuery,
-        statusFilter: statusFilter,
-        kycFilter: kycFilter,
+        statusFilter: statusFilter?.toString().split('.').last,
+        kycStatusFilter: kycStatusFilter?.toString().split('.').last,
       );
+      
+      _users = usersData.map((userData) => UserProfile.fromJson(userData)).toList();
+      notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
-    } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -76,14 +75,8 @@ class AdminProvider extends ChangeNotifier {
   Future<void> suspendUser(String userId, String reason) async {
     try {
       await _adminService.suspendUser(userId, reason);
-      await loadUsers(); // Refresh the list
-      
-      // Log admin action
-      await _adminService.logAdminAction(
-        action: 'suspend_user',
-        targetId: userId,
-        details: 'User suspended: $reason',
-      );
+      await _adminService.logAdminAction('user_suspended', userId, 'User suspended: $reason');
+      await loadUsers(); // Reload users
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -93,14 +86,8 @@ class AdminProvider extends ChangeNotifier {
   Future<void> activateUser(String userId) async {
     try {
       await _adminService.activateUser(userId);
-      await loadUsers(); // Refresh the list
-      
-      // Log admin action
-      await _adminService.logAdminAction(
-        action: 'activate_user',
-        targetId: userId,
-        details: 'User activated',
-      );
+      await _adminService.logAdminAction('user_activated', userId, 'User activated');
+      await loadUsers(); // Reload users
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -109,31 +96,24 @@ class AdminProvider extends ChangeNotifier {
 
   // KYC management methods
   Future<void> loadPendingKYC() async {
-    _isLoading = true;
-    notifyListeners();
-
     try {
-      _pendingKYCUsers = await _adminService.getPendingKYCUsers();
+      final kycData = await _adminService.getPendingKYCUsers();
+      _pendingKYCUsers = kycData.map((data) => KYCUser.fromJson(data)).toList();
+      notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
-    } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> approveKYC(String userId) async {
     try {
-      await _adminService.approveKYC(userId);
-      await loadPendingKYC(); // Refresh the list
-      await loadDashboardData(); // Update dashboard
+      await _adminService.approveKYC(userId, 'KYC approved by admin');
       
       // Log admin action
-      await _adminService.logAdminAction(
-        action: 'approve_kyc',
-        targetId: userId,
-        details: 'KYC approved',
-      );
+      await _adminService.logAdminAction('kyc_approved', userId, 'KYC application approved');
+      
+      await loadPendingKYC(); // Reload pending KYC
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -142,16 +122,12 @@ class AdminProvider extends ChangeNotifier {
 
   Future<void> rejectKYC(String userId, String reason) async {
     try {
-      await _adminService.rejectKYC(userId, reason);
-      await loadPendingKYC(); // Refresh the list
-      await loadDashboardData(); // Update dashboard
+      await _adminService.rejectKYC(userId, reason, _currentAdmin?.id ?? 'unknown');
       
       // Log admin action
-      await _adminService.logAdminAction(
-        action: 'reject_kyc',
-        targetId: userId,
-        details: 'KYC rejected: $reason',
-      );
+      await _adminService.logAdminAction('kyc_rejected', userId, 'KYC application rejected: $reason');
+      
+      await loadPendingKYC(); // Reload pending KYC
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -160,31 +136,24 @@ class AdminProvider extends ChangeNotifier {
 
   // Inventory management methods
   Future<void> loadGoldInventory() async {
-    _isLoading = true;
-    notifyListeners();
-
     try {
-      _goldInventory = await _adminService.getGoldInventory();
+      final inventoryData = await _adminService.getGoldInventory();
+      _goldInventory = GoldInventory.fromJson(inventoryData);
+      notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
-    } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> updateGoldInventory(double amount, String type, String description) async {
+  Future<void> updateInventory(double amount, String type, String description) async {
     try {
       await _adminService.updateGoldInventory(amount, type, description);
-      await loadGoldInventory(); // Refresh inventory
-      await loadDashboardData(); // Update dashboard
       
       // Log admin action
-      await _adminService.logAdminAction(
-        action: 'update_inventory',
-        targetId: 'inventory',
-        details: '$type: ${amount}g - $description',
-      );
+      await _adminService.logAdminAction('inventory_updated', 'inventory', 'Inventory updated: $type ${amount}g - $description');
+      
+      await loadGoldInventory(); // Reload inventory
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -193,15 +162,12 @@ class AdminProvider extends ChangeNotifier {
 
   // Price management methods
   Future<void> loadPriceManagement() async {
-    _isLoading = true;
-    notifyListeners();
-
     try {
-      _priceManagement = await _adminService.getPriceManagement();
+      final priceData = await _adminService.getPriceManagement();
+      _priceManagement = PriceManagement.fromJson(priceData);
+      notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
-    } finally {
-      _isLoading = false;
       notifyListeners();
     }
   }
@@ -209,14 +175,11 @@ class AdminProvider extends ChangeNotifier {
   Future<void> updatePriceSpread(double buySpread, double sellSpread) async {
     try {
       await _adminService.updatePriceSpread(buySpread, sellSpread);
-      await loadPriceManagement(); // Refresh price data
       
       // Log admin action
-      await _adminService.logAdminAction(
-        action: 'update_price_spread',
-        targetId: 'price_management',
-        details: 'Buy: ${(buySpread * 100).toStringAsFixed(2)}%, Sell: ${(sellSpread * 100).toStringAsFixed(2)}%',
-      );
+      await _adminService.logAdminAction('price_spread_updated', 'pricing', 'Price spreads updated: buy $buySpread%, sell $sellSpread%');
+      
+      await loadPriceManagement(); // Reload price management
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -226,15 +189,11 @@ class AdminProvider extends ChangeNotifier {
   Future<void> overrideGoldPrice(double newPrice, String reason) async {
     try {
       await _adminService.overrideGoldPrice(newPrice, reason);
-      await loadPriceManagement(); // Refresh price data
-      await loadDashboardData(); // Update dashboard
       
       // Log admin action
-      await _adminService.logAdminAction(
-        action: 'override_gold_price',
-        targetId: 'price_management',
-        details: 'Price override: RM$newPrice - $reason',
-      );
+      await _adminService.logAdminAction('price_overridden', 'pricing', 'Gold price overridden to RM$newPrice: $reason');
+      
+      await loadPriceManagement(); // Reload price management
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -243,22 +202,20 @@ class AdminProvider extends ChangeNotifier {
 
   // Transaction monitoring methods
   Future<List<TransactionData>> getTransactions({
+    String? searchQuery,
+    String? statusFilter,
     DateTime? startDate,
     DateTime? endDate,
-    String? userId,
-    String? type,
-    double? minAmount,
-    double? maxAmount,
   }) async {
     try {
-      return await _adminService.getTransactions(
+      final transactionsData = await _adminService.getTransactions(
+        searchQuery: searchQuery,
+        statusFilter: statusFilter,
         startDate: startDate,
         endDate: endDate,
-        userId: userId,
-        type: type,
-        minAmount: minAmount,
-        maxAmount: maxAmount,
       );
+      
+      return transactionsData.map((data) => TransactionData.fromJson(data)).toList();
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -269,20 +226,14 @@ class AdminProvider extends ChangeNotifier {
   Future<void> flagSuspiciousTransaction(String transactionId, String reason) async {
     try {
       await _adminService.flagSuspiciousTransaction(transactionId, reason);
-      
-      // Log admin action
-      await _adminService.logAdminAction(
-        action: 'flag_transaction',
-        targetId: transactionId,
-        details: 'Flagged as suspicious: $reason',
-      );
+      await _adminService.logAdminAction('transaction_flagged', transactionId, 'Transaction flagged: $reason');
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
     }
   }
 
-  // Reporting methods
+  // Reports and analytics methods
   Future<Map<String, dynamic>> generateReport({
     required String reportType,
     required DateTime startDate,
@@ -320,11 +271,7 @@ class AdminProvider extends ChangeNotifier {
       );
       
       // Log admin action
-      await _adminService.logAdminAction(
-        action: 'export_report',
-        targetId: 'reports',
-        details: '$reportType report exported as $format',
-      );
+      await _adminService.logAdminAction('report_exported', 'reports', '$reportType report exported as $format');
       
       return reportUrl;
     } catch (e) {
@@ -354,11 +301,7 @@ class AdminProvider extends ChangeNotifier {
       );
       
       // Log admin action
-      await _adminService.logAdminAction(
-        action: 'create_announcement',
-        targetId: 'announcements',
-        details: 'Created announcement: $title',
-      );
+      await _adminService.logAdminAction('announcement_created', 'announcements', 'Created announcement: $title');
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -394,53 +337,5 @@ class AdminProvider extends ChangeNotifier {
   @override
   void dispose() {
     super.dispose();
-  }
-}
-
-// Additional models for transaction data
-class TransactionData {
-  final String id;
-  final String userId;
-  final String userName;
-  final String type; // 'buy', 'sell'
-  final double goldAmount;
-  final double totalAmount;
-  final double pricePerGram;
-  final DateTime timestamp;
-  final String status;
-  final String paymentMethod;
-  final bool isFlagged;
-  final String? flagReason;
-
-  TransactionData({
-    required this.id,
-    required this.userId,
-    required this.userName,
-    required this.type,
-    required this.goldAmount,
-    required this.totalAmount,
-    required this.pricePerGram,
-    required this.timestamp,
-    required this.status,
-    required this.paymentMethod,
-    this.isFlagged = false,
-    this.flagReason,
-  });
-
-  factory TransactionData.fromJson(Map<String, dynamic> json) {
-    return TransactionData(
-      id: json['id'],
-      userId: json['userId'],
-      userName: json['userName'],
-      type: json['type'],
-      goldAmount: json['goldAmount'].toDouble(),
-      totalAmount: json['totalAmount'].toDouble(),
-      pricePerGram: json['pricePerGram'].toDouble(),
-      timestamp: DateTime.parse(json['timestamp']),
-      status: json['status'],
-      paymentMethod: json['paymentMethod'],
-      isFlagged: json['isFlagged'] ?? false,
-      flagReason: json['flagReason'],
-    );
   }
 }
