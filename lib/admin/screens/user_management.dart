@@ -1,9 +1,8 @@
-// lib/admin/screens/user_management.dart
+// lib/admin/screens/user_management.dart - Fixed Version
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../models/admin_models.dart';
-import '../widgets/admin_widgets.dart';
 
 class UserManagementScreen extends StatefulWidget {
   @override
@@ -11,7 +10,7 @@ class UserManagementScreen extends StatefulWidget {
 }
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  final _searchController = TextEditingController();
   UserStatus? _selectedStatusFilter;
   KYCStatus? _selectedKYCFilter;
 
@@ -19,16 +18,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadUsers();
+      context.read<AdminProvider>().loadUsers();
     });
-  }
-
-  void _loadUsers() {
-    context.read<AdminProvider>().loadUsers(
-      searchQuery: _searchController.text,
-      statusFilter: _selectedStatusFilter,
-      kycFilter: _selectedKYCFilter,
-    );
   }
 
   @override
@@ -37,195 +28,186 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       appBar: AppBar(
         title: Text('User Management'),
         backgroundColor: Color(0xFF1B4332),
-        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
-            onPressed: _loadUsers,
+            onPressed: () => _refreshUsers(),
           ),
           IconButton(
-            icon: Icon(Icons.file_download),
+            icon: Icon(Icons.download),
             onPressed: _exportUsersList,
           ),
         ],
       ),
-      drawer: AdminSidebar(),
       body: Column(
         children: [
-          // Search and Filter Section
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Search Bar
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search by name or email...',
-                    prefixIcon: Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      icon: Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        _loadUsers();
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    // Debounce search
-                    Future.delayed(Duration(milliseconds: 500), () {
-                      if (_searchController.text == value) {
-                        _loadUsers();
-                      }
-                    });
-                  },
-                ),
-                SizedBox(height: 16),
-                // Filters
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<UserStatus>(
-                        value: _selectedStatusFilter,
-                        decoration: InputDecoration(
-                          labelText: 'Status Filter',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: null,
-                            child: Text('All Statuses'),
-                          ),
-                          ...UserStatus.values.map((status) => 
-                            DropdownMenuItem(
-                              value: status,
-                              child: Text(_getStatusDisplayName(status)),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedStatusFilter = value;
-                          });
-                          _loadUsers();
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButtonFormField<KYCStatus>(
-                        value: _selectedKYCFilter,
-                        decoration: InputDecoration(
-                          labelText: 'KYC Filter',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: null,
-                            child: Text('All KYC Status'),
-                          ),
-                          ...KYCStatus.values.map((status) => 
-                            DropdownMenuItem(
-                              value: status,
-                              child: Text(_getKYCStatusDisplayName(status)),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedKYCFilter = value;
-                          });
-                          _loadUsers();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          // Users List
+          _buildSearchAndFilters(),
           Expanded(
-            child: Consumer<AdminProvider>(
-              builder: (context, adminProvider, child) {
-                if (adminProvider.isLoading) {
-                  return Center(child: CircularProgressIndicator());
-                }
-
-                if (adminProvider.errorMessage != null) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error, size: 64, color: Colors.red),
-                        SizedBox(height: 16),
-                        Text(
-                          'Error: ${adminProvider.errorMessage}',
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadUsers,
-                          child: Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final users = adminProvider.users;
-                if (users.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text('No users found'),
-                        SizedBox(height: 8),
-                        Text(
-                          'Try adjusting your search or filters',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: users.length,
-                  itemBuilder: (context, index) {
-                    final user = users[index];
-                    return UserManagementCard(
-                      user: user,
-                      onViewDetails: () => _viewUserDetails(user),
-                      onSuspend: () => _suspendUser(user),
-                      onActivate: () => _activateUser(user),
-                      onViewTransactions: () => _viewUserTransactions(user),
-                    );
-                  },
-                );
-              },
-            ),
+            child: _buildUsersList(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSearchAndFilters() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Search bar
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search users by name or email...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        _refreshUsers();
+                      },
+                    )
+                  : null,
+            ),
+            onSubmitted: (_) => _refreshUsers(),
+          ),
+          SizedBox(height: 12),
+          
+          // Filters
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<UserStatus>(
+                  value: _selectedStatusFilter,
+                  decoration: InputDecoration(
+                    labelText: 'Status Filter',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: [
+                    DropdownMenuItem(value: null, child: Text('All Statuses')),
+                    ...UserStatus.values.map((status) =>
+                      DropdownMenuItem(
+                        value: status,
+                        child: Text(_getStatusDisplayName(status)),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedStatusFilter = value;
+                    });
+                    _refreshUsers();
+                  },
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<KYCStatus>(
+                  value: _selectedKYCFilter,
+                  decoration: InputDecoration(
+                    labelText: 'KYC Filter',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: [
+                    DropdownMenuItem(value: null, child: Text('All KYC')),
+                    ...KYCStatus.values.map((status) =>
+                      DropdownMenuItem(
+                        value: status,
+                        child: Text(_getKYCStatusDisplayName(status)),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedKYCFilter = value;
+                    });
+                    _refreshUsers();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsersList() {
+    return Consumer<AdminProvider>(
+      builder: (context, adminProvider, child) {
+        if (adminProvider.isLoading) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (adminProvider.errorMessage != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error, size: 64, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  'Error: ${adminProvider.errorMessage}',
+                  style: TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    adminProvider.clearError();
+                    _refreshUsers();
+                  },
+                  child: Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final users = adminProvider.users;
+        if (users.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No users found',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Try adjusting your search or filters',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.all(16),
+          itemCount: users.length,
+          itemBuilder: (context, index) {
+            final user = users[index];
+            return UserManagementCard(
+              user: user,
+              onViewDetails: () => _viewUserDetails(user),
+              onSuspend: () => _suspendUser(user),
+              onActivate: () => _activateUser(user),
+              onViewTransactions: () => _viewUserTransactions(user),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -233,6 +215,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     switch (status) {
       case UserStatus.active:
         return 'Active';
+      case UserStatus.inactive:
+        return 'Inactive';
+      case UserStatus.blocked:
+        return 'Blocked';
       case UserStatus.suspended:
         return 'Suspended';
       case UserStatus.banned:
@@ -250,30 +236,69 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         return 'Approved';
       case KYCStatus.rejected:
         return 'Rejected';
+      case KYCStatus.underReview:
+        return 'Under Review';
       case KYCStatus.incomplete:
         return 'Incomplete';
     }
   }
 
+  void _refreshUsers() {
+    context.read<AdminProvider>().loadUsers(
+      searchQuery: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
+      statusFilter: _selectedStatusFilter,
+      kycStatusFilter: _selectedKYCFilter,
+    );
+  }
+
   void _viewUserDetails(UserProfile user) {
-    Navigator.pushNamed(
-      context,
-      '/admin/user-details',
-      arguments: user,
+    showDialog(
+      context: context,
+      builder: (context) => UserDetailsDialog(user: user),
     );
   }
 
   void _suspendUser(UserProfile user) {
+    final _reasonController = TextEditingController();
+    
     showDialog(
       context: context,
-      builder: (context) => SuspendUserDialog(
-        user: user,
-        onConfirm: (reason) {
-          context.read<AdminProvider>().suspendUser(user.id, reason);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('User suspended successfully')),
-          );
-        },
+      builder: (context) => AlertDialog(
+        title: Text('Suspend User'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Are you sure you want to suspend ${user.name}?'),
+            SizedBox(height: 16),
+            TextField(
+              controller: _reasonController,
+              decoration: InputDecoration(
+                labelText: 'Reason for suspension',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_reasonController.text.trim().isNotEmpty) {
+                Navigator.pop(context);
+                context.read<AdminProvider>().suspendUser(user.id, _reasonController.text.trim());
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('User suspended successfully')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Suspend'),
+          ),
+        ],
       ),
     );
   }
@@ -314,7 +339,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   void _exportUsersList() {
-    // TODO: Implement export functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Export functionality coming soon')),
     );
@@ -346,7 +370,7 @@ class UserManagementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -355,148 +379,124 @@ class UserManagementCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  radius: 25,
                   backgroundColor: _getStatusColor(),
                   child: Text(
-                    user.name[0].toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                    user.name.substring(0, 1).toUpperCase(),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
-                SizedBox(width: 16),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         user.name,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         user.email,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600]),
                       ),
                       Text(
-                        user.phone,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        user.phoneNumber ?? 'No phone',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                     ],
                   ),
                 ),
-                PopupMenuButton(
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'details',
-                      child: Row(
-                        children: [
-                          Icon(Icons.visibility),
-                          SizedBox(width: 8),
-                          Text('View Details'),
-                        ],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor().withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    PopupMenuItem(
-                      value: 'transactions',
-                      child: Row(
-                        children: [
-                          Icon(Icons.account_balance),
-                          SizedBox(width: 8),
-                          Text('View Transactions'),
-                        ],
-                      ),
-                    ),
-                    if (user.status == UserStatus.active)
-                      PopupMenuItem(
-                        value: 'suspend',
-                        child: Row(
-                          children: [
-                            Icon(Icons.block, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Suspend User'),
-                          ],
+                      child: Text(
+                        _getStatusDisplayName(),
+                        style: TextStyle(
+                          color: _getStatusColor(),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
-                    if (user.status == UserStatus.suspended)
-                      PopupMenuItem(
-                        value: 'activate',
-                        child: Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text('Activate User'),
-                          ],
+                    ),
+                    SizedBox(height: 4),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getKYCStatusColor().withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _getKYCStatusDisplayName(),
+                        style: TextStyle(
+                          color: _getKYCStatusColor(),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
+                    ),
                   ],
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'details':
-                        onViewDetails();
-                        break;
-                      case 'transactions':
-                        onViewTransactions();
-                        break;
-                      case 'suspend':
-                        onSuspend();
-                        break;
-                      case 'activate':
-                        onActivate();
-                        break;
-                    }
-                  },
                 ),
-              ],
-            ),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                _buildStatusChip('Status', _getStatusDisplayName(), _getStatusColor()),
-                SizedBox(width: 8),
-                _buildStatusChip('KYC', _getKYCStatusDisplayName(), _getKYCStatusColor()),
               ],
             ),
             SizedBox(height: 12),
+            
+            // User stats
             Row(
               children: [
                 Expanded(
-                  child: _buildInfoItem(
-                    'Gold Balance',
-                    '${user.goldBalance.toStringAsFixed(3)}g',
-                    Icons.inventory,
-                  ),
+                  child: _buildStatItem('Gold Holdings', '${user.goldHoldings.toStringAsFixed(3)}g'),
                 ),
                 Expanded(
-                  child: _buildInfoItem(
-                    'Portfolio Value',
-                    'RM ${user.portfolioValue.toStringAsFixed(2)}',
-                    Icons.account_balance_wallet,
-                  ),
+                  child: _buildStatItem('Total Value', 'RM ${(user.goldHoldings * 475).toStringAsFixed(2)}'),
                 ),
                 Expanded(
-                  child: _buildInfoItem(
-                    'Transactions',
-                    user.totalTransactions.toString(),
-                    Icons.swap_horiz,
-                  ),
+                  child: _buildStatItem('Transactions', '${user.totalTransactions}'),
                 ),
                 Expanded(
-                  child: _buildInfoItem(
-                    'Last Login',
-                    _formatLastLogin(),
-                    Icons.access_time,
+                  child: _buildStatItem('Last Active', _getLastActiveText()),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onViewDetails,
+                    icon: Icon(Icons.info_outline, size: 16),
+                    label: Text('Details'),
                   ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onViewTransactions,
+                    icon: Icon(Icons.history, size: 16),
+                    label: Text('Transactions'),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: user.status == UserStatus.active
+                      ? ElevatedButton.icon(
+                          onPressed: onSuspend,
+                          icon: Icon(Icons.block, size: 16),
+                          label: Text('Suspend'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: onActivate,
+                          icon: Icon(Icons.check_circle, size: 16),
+                          label: Text('Activate'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                        ),
                 ),
               ],
             ),
@@ -506,43 +506,16 @@ class UserManagementCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(String label, String value, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        '$label: $value',
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String label, String value, IconData icon) {
+  Widget _buildStatItem(String label, String value) {
     return Column(
       children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 10,
-          ),
+          style: TextStyle(color: Colors.grey[600], fontSize: 12),
         ),
       ],
     );
@@ -552,12 +525,16 @@ class UserManagementCard extends StatelessWidget {
     switch (user.status) {
       case UserStatus.active:
         return Colors.green;
-      case UserStatus.suspended:
+      case UserStatus.inactive:
+        return Colors.grey;
+      case UserStatus.blocked:
         return Colors.red;
-      case UserStatus.banned:
-        return Colors.purple;
-      case UserStatus.pending:
+      case UserStatus.suspended:
         return Colors.orange;
+      case UserStatus.banned:
+        return Colors.red;
+      case UserStatus.pending:
+        return Colors.blue;
     }
   }
 
@@ -565,10 +542,12 @@ class UserManagementCard extends StatelessWidget {
     switch (user.kycStatus) {
       case KYCStatus.approved:
         return Colors.green;
-      case KYCStatus.rejected:
-        return Colors.red;
       case KYCStatus.pending:
         return Colors.orange;
+      case KYCStatus.rejected:
+        return Colors.red;
+      case KYCStatus.underReview:
+        return Colors.blue;
       case KYCStatus.incomplete:
         return Colors.grey;
     }
@@ -578,6 +557,10 @@ class UserManagementCard extends StatelessWidget {
     switch (user.status) {
       case UserStatus.active:
         return 'Active';
+      case UserStatus.inactive:
+        return 'Inactive';
+      case UserStatus.blocked:
+        return 'Blocked';
       case UserStatus.suspended:
         return 'Suspended';
       case UserStatus.banned:
@@ -591,130 +574,105 @@ class UserManagementCard extends StatelessWidget {
     switch (user.kycStatus) {
       case KYCStatus.approved:
         return 'Approved';
-      case KYCStatus.rejected:
-        return 'Rejected';
       case KYCStatus.pending:
         return 'Pending';
+      case KYCStatus.rejected:
+        return 'Rejected';
+      case KYCStatus.underReview:
+        return 'Under Review';
       case KYCStatus.incomplete:
         return 'Incomplete';
     }
   }
 
-  String _formatLastLogin() {
+  String _getLastActiveText() {
     final now = DateTime.now();
-    final difference = now.difference(user.lastLogin);
-    
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
+    final difference = now.difference(user.lastActive);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
       return '${difference.inHours}h ago';
     } else {
-      return '${difference.inMinutes}m ago';
+      return '${difference.inDays}d ago';
     }
   }
 }
 
-class SuspendUserDialog extends StatefulWidget {
+class UserDetailsDialog extends StatelessWidget {
   final UserProfile user;
-  final Function(String) onConfirm;
 
-  const SuspendUserDialog({
-    Key? key,
-    required this.user,
-    required this.onConfirm,
-  }) : super(key: key);
-
-  @override
-  _SuspendUserDialogState createState() => _SuspendUserDialogState();
-}
-
-class _SuspendUserDialogState extends State<SuspendUserDialog> {
-  final TextEditingController _reasonController = TextEditingController();
-  String? _selectedReason;
-
-  final List<String> _predefinedReasons = [
-    'Suspicious activity detected',
-    'Failed KYC verification',
-    'Terms of service violation',
-    'Requested by user',
-    'Security concerns',
-    'Other (specify below)',
-  ];
+  const UserDetailsDialog({Key? key, required this.user}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Suspend User'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Suspend ${widget.user.name}?'),
-          SizedBox(height: 16),
-          Text('Reason for suspension:'),
-          SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _selectedReason,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Select a reason',
+    return Dialog(
+      child: Container(
+        width: 500,
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'User Details',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.close),
+                ),
+              ],
             ),
-            items: _predefinedReasons.map((reason) => 
-              DropdownMenuItem(
-                value: reason,
-                child: Text(reason),
-              ),
-            ).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedReason = value;
-              });
-            },
-          ),
-          if (_selectedReason == 'Other (specify below)') ...[
-            SizedBox(height: 16),
-            TextField(
-              controller: _reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Enter custom reason...',
-                border: OutlineInputBorder(),
-              ),
+            SizedBox(height: 20),
+            
+            _buildDetailRow('Name', user.name),
+            _buildDetailRow('Email', user.email),
+            _buildDetailRow('Phone', user.phoneNumber ?? 'Not provided'),
+            _buildDetailRow('Status', user.status.toString().split('.').last),
+            _buildDetailRow('KYC Status', user.kycStatus.toString().split('.').last),
+            _buildDetailRow('Gold Holdings', '${user.goldHoldings.toStringAsFixed(4)}g'),
+            _buildDetailRow('Total Transactions', '${user.totalTransactions}'),
+            _buildDetailRow('Join Date', user.joinDate.toString().split(' ')[0]),
+            _buildDetailRow('Last Active', user.lastActive.toString()),
+            
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Close'),
+                ),
+              ],
             ),
           ],
-        ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _canConfirm() ? () {
-            final reason = _selectedReason == 'Other (specify below)'
-                ? _reasonController.text
-                : _selectedReason!;
-            Navigator.pop(context);
-            widget.onConfirm(reason);
-          } : null,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          child: Text('Suspend'),
-        ),
-      ],
     );
   }
 
-  bool _canConfirm() {
-    if (_selectedReason == null) return false;
-    if (_selectedReason == 'Other (specify below)') {
-      return _reasonController.text.isNotEmpty;
-    }
-    return true;
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(value),
+          ),
+        ],
+      ),
+    );
   }
 }
