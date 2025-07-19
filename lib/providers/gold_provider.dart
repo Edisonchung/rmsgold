@@ -19,6 +19,9 @@ class GoldPrice {
     this.currency = 'MYR',
     this.source = 'Bloomberg',
   });
+
+  // Add a price getter for compatibility
+  double get price => buyPrice;
 }
 
 class Portfolio {
@@ -49,7 +52,12 @@ class GoldProvider extends ChangeNotifier {
   double _demoGoldHoldings = 2.41;
   double _demoPurchaseAverage = 472.50;
   
+  // Fixed getters - added price value getters for compatibility
   GoldPrice? get currentPrice => _currentPrice;
+  double get currentPriceValue => _currentPrice?.buyPrice ?? 0.0;
+  double get currentBuyPrice => _currentPrice?.buyPrice ?? 0.0;
+  double get currentSellPrice => _currentPrice?.sellPrice ?? 0.0;
+  
   Portfolio? get portfolio => _portfolio;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -111,6 +119,65 @@ class GoldProvider extends ChangeNotifier {
     );
     
     notifyListeners();
+  }
+
+  // Add methods for purchasing and selling gold
+  Future<bool> buyGold(double amount, double pricePerGram) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      
+      // Simulate purchase processing
+      await Future.delayed(Duration(seconds: 2));
+      
+      // Update holdings
+      _demoGoldHoldings += amount;
+      
+      // Recalculate average purchase price
+      final totalValue = (_demoPurchaseAverage * (_demoGoldHoldings - amount)) + (pricePerGram * amount);
+      _demoPurchaseAverage = totalValue / _demoGoldHoldings;
+      
+      _updatePortfolio();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Purchase failed: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> sellGold(double amount, double pricePerGram) async {
+    try {
+      if (amount > _demoGoldHoldings) {
+        _errorMessage = 'Insufficient gold holdings';
+        notifyListeners();
+        return false;
+      }
+      
+      _isLoading = true;
+      notifyListeners();
+      
+      // Simulate sale processing
+      await Future.delayed(Duration(seconds: 2));
+      
+      // Update holdings
+      _demoGoldHoldings -= amount;
+      
+      _updatePortfolio();
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Sale failed: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   void clearError() {
