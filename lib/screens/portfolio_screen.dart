@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-// Remove conflicting import - we'll use AuthProvider's User model
-// import '../models/user_model.dart';
+// FIXED: Removed conflicting import to resolve compilation error
+// The AuthProvider already has its own User class
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
