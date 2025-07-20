@@ -42,13 +42,13 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD3Ew35StZUX8Y3KnsqgM6wYY94gwzfmF4',
-    authDomain: 'rmsgold-28441.firebaseapp.com',
-    projectId: 'rmsgold-28441',
-    storageBucket: 'rmsgold-28441.firebasestorage.app',
-    messagingSenderId: '541263514779',
-    appId: '1:541263514779:web:47eac110537294b3710a3e',
-    measurementId: 'G-VQ5E0DCYYS',
+   apiKey: "AIzaSyBGS1_nlnREDg8VPZb9_FKbkjDu6wraMTQ",
+  authDomain: "rmsgold-f76be.firebaseapp.com",
+  projectId: "rmsgold-f76be",
+  storageBucket: "rmsgold-f76be.firebasestorage.app",
+  messagingSenderId: "656232807534",
+  appId: "1:656232807534:web:f7ddc2c0c12533ed78ba7f",
+  measurementId: "G-GTTMERXPY9"
   );
 
   static const FirebaseOptions android = FirebaseOptions(
