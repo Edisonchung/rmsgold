@@ -48,7 +48,7 @@ class DefaultFirebaseOptions {
   storageBucket: "rmsgold-f76be.firebasestorage.app",
   messagingSenderId: "656232807534",
   appId: "1:656232807534:web:f7ddc2c0c12533ed78ba7f",
-  measurementId: "G-GTTMERXPY9"
+  measurementId: "G-GTTMERXPY9",
   );
 
   static const FirebaseOptions android = FirebaseOptions(
